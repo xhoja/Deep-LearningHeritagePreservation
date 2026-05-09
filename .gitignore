@@ -1,0 +1,48 @@
+# Claude Code
+.claude/
+
+# Data (stored on Google Drive)
+data/
+
+# Model checkpoints (stored on Google Drive / Colab)
+checkpoints/
+
+# Outputs
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Conda / venv
+.env
+.venv
+env/
+venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Compiled
+*.so
+*.dylib
