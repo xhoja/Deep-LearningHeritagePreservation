@@ -225,7 +225,7 @@ python infer.py \
 | Task | Metrics | SotA Target (extra credit threshold) | Result |
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
-| Detection | mAP@50, mAP@50:95, Precision, Recall | mAP@50 > 70% | — |
+| Detection | mAP@50, mAP@50:95, Precision, Recall | mAP@50 > 70% | **val 96.7% ✓ / test 34.6%** |
 | Segmentation | mIoU, Dice coefficient, Pixel Accuracy | mIoU > 80% | — |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
@@ -238,6 +238,26 @@ Trained on T4 GPU (Google Colab), 30 epochs, AMP enabled, effective batch size 3
 | **Test** | **99.83%** | **99.56%** | **≈100%** |
 
 All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
+
+### Task 2 — Detection Results (YOLOv8s, OmniCrack30k)
+
+Trained on T4 GPU (Google Colab), 30 epochs, imgsz=416, batch=32, AMP enabled. 3.58 hours total.
+
+**Validation set (OmniCrack30k val, 3277 images):**
+
+| Epoch | box_loss | cls_loss | mAP@50 | mAP@50:95 | Precision | Recall |
+|---|---|---|---|---|---|---|
+| Best (epoch 26–30) | 0.159 | 0.269 | **0.967** | **0.935** | 0.950 | 0.917 |
+
+Val mAP@50 = **96.7%** — SotA target (>70%) exceeded.
+
+**Test set (OmniCrack30k test, 4582 images):**
+
+| Split | mAP@50 | mAP@50:95 | Precision | Recall |
+|---|---|---|---|---|
+| **Test** | **34.6%** | **10.1%** | 47.9% | 36.2% |
+
+Large val→test gap reflects OmniCrack30k's cross-domain test split (different crack surfaces, materials, and lighting). This directly addresses the project's research question on cross-dataset generalization. See `notebooks/02_detection.ipynb` for training curves and prediction visualisations.
 
 ---
 
@@ -282,7 +302,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Project scoping and dataset identification
 - [x] Data download and preprocessing (all 4 datasets)
 - [x] Task 1: Classification — EfficientNet-B4, 99.83% acc, 99.56% F1, ≈100% AUC-ROC
-- [ ] Task 2: Detection training
+- [x] Task 2: Detection — YOLOv8s, val mAP@50=96.7%, test mAP@50=34.6% (cross-domain gap)
 - [ ] Task 3: Segmentation training
 - [ ] Cross-dataset evaluation
 - [ ] Failure analysis and Grad-CAM visualizations
