@@ -271,6 +271,7 @@ Trained on T4 GPU (Google Colab), 150 epochs, 384×384, AMP enabled. Combined st
 | Background IoU | 98.70% | — |
 
 mIoU computed as mean of crack-class IoU and background IoU — standard semantic segmentation definition. SotA target exceeded. See `notebooks/03_segmentation.ipynb` for training curves and prediction visualisations.
+
 ---
 
 ## Validation Samples
