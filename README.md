@@ -238,18 +238,6 @@ Trained on T4 GPU (Google Colab), 30 epochs, AMP enabled, effective batch size 3
 
 All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
 
-### Task 3 — Segmentation Results (U-Net + ResNet34, Masonry + CrackForest)
-
-Trained on T4 GPU (Google Colab), 150 epochs, 384×384, AMP enabled. Combined stratified split (358 pairs). Loss: Focal + Tversky (α=0.3, β=0.7).
-
-| Metric | Value | Target |
-|---|---|---|
-| **mIoU (2-class mean)** | **83.56%** | **> 80% ✓** |
-| Dice (crack class) | 81.26% | — |
-| Crack IoU | 68.43% | — |
-| Background IoU | 98.70% | — |
-
-mIoU computed as mean of crack-class IoU and background IoU — standard semantic segmentation definition. SotA target exceeded. See `notebooks/03_segmentation.ipynb` for training curves and prediction visualisations.
 
 ### Task 2 — Detection Results (YOLOv8s, OmniCrack30k)
 
@@ -271,6 +259,18 @@ Val mAP@50 = **96.7%** — SotA target (>70%) exceeded.
 
 Large val→test gap reflects OmniCrack30k's cross-domain test split (different crack surfaces, materials, and lighting). This directly addresses the project's research question on cross-dataset generalization. See `notebooks/02_detection.ipynb` for training curves and prediction visualisations.
 
+### Task 3 — Segmentation Results (U-Net + ResNet34, Masonry + CrackForest)
+
+Trained on T4 GPU (Google Colab), 150 epochs, 384×384, AMP enabled. Combined stratified split (358 pairs). Loss: Focal + Tversky (α=0.3, β=0.7).
+
+| Metric | Value | Target |
+|---|---|---|
+| **mIoU (2-class mean)** | **83.56%** | **> 80% ✓** |
+| Dice (crack class) | 81.26% | — |
+| Crack IoU | 68.43% | — |
+| Background IoU | 98.70% | — |
+
+mIoU computed as mean of crack-class IoU and background IoU — standard semantic segmentation definition. SotA target exceeded. See `notebooks/03_segmentation.ipynb` for training curves and prediction visualisations.
 ---
 
 ## Validation Samples
