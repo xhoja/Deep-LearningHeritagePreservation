@@ -59,8 +59,9 @@ Input Image
 | Dataset | Task | Images | Access |
 |---|---|---|---|
 | [HistoricalCrack18-19](https://data.mendeley.com/datasets/xfk99kpmj9/1) | Classification | ~3,900 | Free (Mendeley) |
-| [Dais Masonry Dataset](https://github.com/dimitrisdais/crack_detection_CNN_masonry) | Classification + Segmentation | Subset | Free (GitHub) |
-| [OmniCrack30k](https://github.com/ben-z-original/omnicrack30k) | Detection + Segmentation | ~30,000 | Free (GitHub) |
+| [Dais Masonry Dataset](https://github.com/dimitrisdais/crack_detection_CNN_masonry) | Segmentation | 240 | Free (GitHub) |
+| [CrackForest](https://github.com/cuilimeng/CrackForest-dataset) | Segmentation | 118 | Free (GitHub) |
+| [OmniCrack30k](https://github.com/ben-z-original/omnicrack30k) | Detection | ~30,000 | Free (GitHub) |
 | [Heritage Building Defect Dataset](https://www.kaggle.com/datasets/ziya07/heritage-building-defect-detection-dataset) | Classification | Varies | Free (Kaggle) |
 
 Place all datasets under `data/` following the structure below.
@@ -97,12 +98,9 @@ heritage-damage-assessment/
 │   └── utils.py                   # Metrics, Grad-CAM, visualization
 │
 ├── notebooks/
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_classification_baseline.ipynb
-│   ├── 03_detection_training.ipynb
-│   ├── 04_segmentation_training.ipynb
-│   ├── 05_cross_dataset_evaluation.ipynb
-│   └── 06_results_summary.ipynb
+│   ├── 01_classification.ipynb        # EfficientNet-B4 classification (with outputs)
+│   ├── 02_detection.ipynb             # YOLOv8s detection (with outputs)
+│   └── 03_segmentation.ipynb          # U-Net + ResNet34 segmentation (with outputs)
 │
 ├── samples/                       # Testing samples for validation (required deliverable)
 │   ├── images/                    # Sample input images
@@ -180,9 +178,10 @@ python train_detector.py \
 
 ```bash
 python train_segmentor.py \
-  --data data/masonry \
-  --encoder resnet50 \
-  --epochs 50 \
+  --data data/masonry data/crackforest \
+  --encoder resnet34 \
+  --epochs 150 \
+  --img-size 384 \
   --output checkpoints/segmentor/
 ```
 
@@ -226,7 +225,7 @@ python infer.py \
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
 | Detection | mAP@50, mAP@50:95, Precision, Recall | mAP@50 > 70% | **val 96.7% ✓ / test 34.6%** |
-| Segmentation | mIoU, Dice coefficient, Pixel Accuracy | mIoU > 80% | — |
+| Segmentation | mIoU, Dice coefficient | mIoU > 80% | **mIoU 83.56% ✓ / Dice 81.26%** |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
 
@@ -238,6 +237,19 @@ Trained on T4 GPU (Google Colab), 30 epochs, AMP enabled, effective batch size 3
 | **Test** | **99.83%** | **99.56%** | **≈100%** |
 
 All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
+
+### Task 3 — Segmentation Results (U-Net + ResNet34, Masonry + CrackForest)
+
+Trained on T4 GPU (Google Colab), 150 epochs, 384×384, AMP enabled. Combined stratified split (358 pairs). Loss: Focal + Tversky (α=0.3, β=0.7).
+
+| Metric | Value | Target |
+|---|---|---|
+| **mIoU (2-class mean)** | **83.56%** | **> 80% ✓** |
+| Dice (crack class) | 81.26% | — |
+| Crack IoU | 68.43% | — |
+| Background IoU | 98.70% | — |
+
+mIoU computed as mean of crack-class IoU and background IoU — standard semantic segmentation definition. SotA target exceeded. See `notebooks/03_segmentation.ipynb` for training curves and prediction visualisations.
 
 ### Task 2 — Detection Results (YOLOv8s, OmniCrack30k)
 
@@ -303,7 +315,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Data download and preprocessing (all 4 datasets)
 - [x] Task 1: Classification — EfficientNet-B4, 99.83% acc, 99.56% F1, ≈100% AUC-ROC
 - [x] Task 2: Detection — YOLOv8s, val mAP@50=96.7%, test mAP@50=34.6% (cross-domain gap)
-- [ ] Task 3: Segmentation training
+- [x] Task 3: Segmentation — U-Net + ResNet34, mIoU=83.56%, Dice=81.26% (2-class, >80% ✓)
 - [ ] Cross-dataset evaluation
 - [ ] Failure analysis and Grad-CAM visualizations
 - [ ] Populate `samples/` with validation images
