@@ -37,19 +37,24 @@ Input Image
      │
      ▼
 [Task 1] Damage Classification
-         Binary: damaged / intact
-         Backbone: ResNet50 / EfficientNet-B4
-         (pretrained on ImageNet, fine-tuned)
+         Binary: cracked / intact
+         Model: EfficientNet-B4 (ImageNet pretrained, fine-tuned)
+         Output: class label + confidence score
      │
-     ▼  (if damaged)
-[Task 2] Damage Detection
-         Bounding box localization of crack/defect regions
-         Model: YOLOv8 / Faster R-CNN
+     ▼  (routed only if classified as cracked)
+[Task 2] Crack Detection
+         Bounding box localisation of crack regions
+         Model: YOLOv8s — two variants:
+           • General: trained on OmniCrack30k (30k images)
+           • Heritage: fine-tuned on CrackForest + Masonry (250 images)
+         Output: bounding boxes + confidence scores
      │
      ▼
-[Task 3] Damage Segmentation
-         Pixel-level delineation → damage severity score
-         Model: U-Net with ResNet encoder
+[Task 3] Crack Segmentation
+         Pixel-level crack mask
+         Model: U-Net + ResNet34 encoder (ImageNet pretrained)
+         Trained on: Masonry (240) + CrackForest (118) combined
+         Output: binary crack mask (crack / background)
 ```
 
 ---
