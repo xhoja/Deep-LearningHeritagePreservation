@@ -24,6 +24,45 @@ from PIL import Image
 from torchvision import transforms
 from ultralytics import YOLO
 
+
+# ---------------------------------------------------------------------------
+# Grad-CAM
+# ---------------------------------------------------------------------------
+class GradCAM:
+    def __init__(self, model: nn.Module, target_layer: nn.Module):
+        self.model = model
+        self.gradients = None
+        self.activations = None
+        target_layer.register_forward_hook(self._save_activation)
+        target_layer.register_full_backward_hook(self._save_gradient)
+
+    def _save_activation(self, module, input, output):
+        self.activations = output.detach()
+
+    def _save_gradient(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0].detach()
+
+    def __call__(self, x: torch.Tensor, class_idx: int = None) -> np.ndarray:
+        self.model.eval()
+        logits = self.model(x)
+        if class_idx is None:
+            class_idx = logits.argmax(dim=1).item()
+        self.model.zero_grad()
+        logits[0, class_idx].backward()
+        weights = self.gradients.mean(dim=(2, 3), keepdim=True)
+        cam = (weights * self.activations).sum(dim=1, keepdim=True)
+        cam = torch.relu(cam).squeeze().cpu().numpy()
+        cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+        return cam
+
+    @staticmethod
+    def overlay(image_rgb: np.ndarray, cam: np.ndarray, alpha: float = 0.45) -> np.ndarray:
+        h, w = image_rgb.shape[:2]
+        cam_resized = cv2.resize(cam, (w, h))
+        heatmap = cv2.applyColorMap((cam_resized * 255).astype(np.uint8), cv2.COLORMAP_JET)
+        heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+        return (alpha * heatmap + (1 - alpha) * image_rgb).astype(np.uint8)
+
 # ---------------------------------------------------------------------------
 # Paths & device
 # ---------------------------------------------------------------------------
@@ -91,6 +130,7 @@ def load_models():
         cls_model.load_state_dict(ckpt["model_state"])
         cls_model.eval().to(DEVICE)
         _models["cls"] = cls_model
+        _models["gradcam"] = GradCAM(cls_model, cls_model.features[-1])
 
         seg_model = _build_segmentor()
         ckpt = torch.load(SEG_CKPT, map_location="cpu")
@@ -117,13 +157,19 @@ def _pil_to_b64(img: Image.Image, fmt: str = "JPEG") -> str:
 
 def _classify(img: Image.Image) -> dict:
     tensor = cls_transform(img).unsqueeze(0).to(DEVICE)
+    # GradCAM needs gradients — do forward+backward first
+    cam = _models["gradcam"](tensor)
+    # Clean probability pass
     with torch.no_grad():
         probs = torch.softmax(_models["cls"](tensor), dim=1)[0].cpu().numpy()
     label = CLASS_NAMES[int(probs.argmax())]
+    img_arr = np.array(img)
+    cam_overlay = GradCAM.overlay(img_arr, cam)
     return {
         "label":       label,
         "cracked_pct": float(probs[1] * 100),
         "intact_pct":  float(probs[0] * 100),
+        "cam_b64":     _pil_to_b64(Image.fromarray(cam_overlay)),
     }
 
 
@@ -150,25 +196,35 @@ def _segment(img: Image.Image) -> dict:
 
 
 def _detect(img: Image.Image) -> dict:
-    arr     = np.array(img)
+    arr = np.array(img)
+
+    # First pass: standard threshold
     results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
-    boxes   = results[0].boxes
+    boxes = results[0].boxes
+    sensitive = False
+
+    # Second pass: lower threshold when classifier would likely flag but detector misses
+    if len(boxes) == 0:
+        results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
+        boxes = results[0].boxes
+        sensitive = True
 
     out = arr.copy()
+    color = (255, 140, 0) if not sensitive else (100, 160, 255)
     for box in boxes:
         x1, y1, x2, y2 = box.xyxy[0].cpu().int().tolist()
         conf = float(box.conf[0])
-        # Clean orange box
-        cv2.rectangle(out, (x1, y1), (x2, y2), (255, 140, 0), 2)
+        cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
         label = f"Crack {conf:.0%}"
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-        cv2.rectangle(out, (x1, y1 - th - 8), (x1 + tw + 6, y1), (255, 140, 0), -1)
+        cv2.rectangle(out, (x1, y1 - th - 8), (x1 + tw + 6, y1), color, -1)
         cv2.putText(out, label, (x1 + 3, y1 - 4),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
     return {
         "image_b64": _pil_to_b64(Image.fromarray(out)),
         "n_boxes":   int(len(boxes)),
+        "sensitive": sensitive,
     }
 
 

@@ -52,7 +52,7 @@
         ← Home
       </a>
       <span class="text-slate-200">|</span>
-      <span class="font-semibold text-slate-800 text-sm">🏛 Albanian Heritage — Damage Analysis</span>
+      <span class="font-semibold text-slate-800 text-sm">Albanian Heritage Damage Analysis</span>
     </div>
   </nav>
 
@@ -110,7 +110,6 @@
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-2 mb-5">
-            <span class="text-xl">🔍</span>
             <span class="font-semibold text-slate-700">Classification</span>
             <span class="ml-auto text-xs text-slate-400">EfficientNet-B4 · 99.8% acc</span>
           </div>
@@ -126,28 +125,23 @@
 
           <!-- Result -->
           <div id="cls-result" class="hidden fade-up">
-            <div id="cls-label" class="text-5xl font-bold mb-6"></div>
-            <div class="space-y-4">
-              <div>
-                <div class="flex justify-between text-sm mb-1.5">
-                  <span class="text-slate-600 font-medium">Cracked</span>
-                  <span id="cls-cracked-pct" class="font-semibold text-slate-800"></span>
-                </div>
-                <div class="bar"><div id="cls-cracked-bar" class="bar-fill bg-red-500" style="width:0%"></div></div>
-              </div>
-              <div>
-                <div class="flex justify-between text-sm mb-1.5">
-                  <span class="text-slate-600 font-medium">Intact</span>
-                  <span id="cls-intact-pct" class="font-semibold text-slate-800"></span>
-                </div>
-                <div class="bar"><div id="cls-intact-bar" class="bar-fill bg-emerald-500" style="width:0%"></div></div>
+            <div class="flex items-baseline gap-4 mb-4">
+              <div id="cls-label" class="text-4xl font-bold"></div>
+              <div class="text-right ml-auto">
+                <div class="text-xs text-slate-400 mb-0.5">Cracked</div>
+                <span id="cls-cracked-pct" class="font-bold text-slate-800 text-lg"></span>
               </div>
             </div>
+            <img id="cls-cam-img" src="" alt="Grad-CAM" class="result-img mb-3"/>
+            <p class="text-xs text-slate-400">Grad-CAM: red regions drove the classification decision</p>
           </div>
         </div>
       </div>
 
     </div>
+
+    <!-- ── CONSENSUS NOTE ────────────────────────────────────────────────── -->
+    <div id="consensus-box" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-4 text-sm leading-relaxed"></div>
 
     <!-- ── LOADING ──────────────────────────────────────────────────────── -->
     <div id="loading" class="hidden flex-col items-center justify-center py-14 gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
@@ -164,7 +158,6 @@
       <!-- Detection -->
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-xl">📦</span>
           <span class="font-semibold text-slate-700">Detection</span>
           <span class="ml-auto text-xs text-slate-400">YOLOv8s · mAP@50 96.7%</span>
         </div>
@@ -175,7 +168,6 @@
       <!-- Segmentation -->
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-xl">🗺</span>
           <span class="font-semibold text-slate-700">Segmentation</span>
           <span class="ml-auto text-xs text-slate-400">U-Net/ResNet34 · mIoU 83.6%</span>
         </div>
@@ -240,7 +232,7 @@
         if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Server error'); }
         render(await res.json());
       } catch(e) {
-        document.getElementById('error-box').textContent = '⚠ ' + e.message;
+        document.getElementById('error-box').textContent = e.message;
         document.getElementById('error-box').classList.remove('hidden');
       } finally {
         hideLoading();
@@ -256,19 +248,42 @@
       res.classList.remove('hidden');
       const lbl = document.getElementById('cls-label');
       lbl.textContent = cls.label;
-      lbl.className   = 'text-5xl font-bold mb-6 ' + (cls.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
+      lbl.className   = 'text-4xl font-bold ' + (cls.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
       document.getElementById('cls-cracked-pct').textContent = cls.cracked_pct.toFixed(1) + '%';
-      document.getElementById('cls-intact-pct').textContent  = cls.intact_pct.toFixed(1)  + '%';
-      setTimeout(() => {
-        document.getElementById('cls-cracked-bar').style.width = cls.cracked_pct + '%';
-        document.getElementById('cls-intact-bar').style.width  = cls.intact_pct  + '%';
-        res.classList.add('in');
-      }, 60);
+      document.getElementById('cls-cam-img').src = 'data:image/jpeg;base64,' + cls.cam_b64;
+      setTimeout(() => { res.classList.add('in'); }, 60);
+
+      // Consensus note when models disagree
+      const clsIsCracked = cls.label === 'Cracked';
+      const detFound     = det.n_boxes > 0 && !det.sensitive;
+      const segFound     = seg.crack_pct > 1.0;
+      const votes        = [clsIsCracked, detFound, segFound].filter(Boolean).length;
+      const consensusBox = document.getElementById('consensus-box');
+      if (votes > 0 && votes < 3) {
+        const agree   = [];
+        const disagree = [];
+        if (clsIsCracked) agree.push('Classifier'); else disagree.push('Classifier');
+        if (detFound)     agree.push('Detector');   else disagree.push('Detector');
+        if (segFound)     agree.push('Segmentor');  else disagree.push('Segmentor');
+        let note = `${votes}/3 models detect damage. `;
+        if (votes >= 2) {
+          note += `${agree.join(' and ')} indicate cracking; ${disagree.join(' and ')} found no significant crack regions. `;
+        } else {
+          note += `Only ${agree.join(' and ')} indicates cracking; ${disagree.join(' and ')} found no significant crack regions. `;
+        }
+        note += 'This can occur when cracks are fine-grained (visible to classifier/segmentor but below detector confidence threshold).';
+        consensusBox.textContent = note;
+        consensusBox.classList.remove('hidden');
+      } else {
+        consensusBox.classList.add('hidden');
+      }
 
       // Detection + Segmentation images
-      document.getElementById('det-img').src     = 'data:image/jpeg;base64,' + det.image_b64;
-      document.getElementById('det-caption').textContent =
-        det.n_boxes > 0 ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected` : 'No cracks detected';
+      document.getElementById('det-img').src = 'data:image/jpeg;base64,' + det.image_b64;
+      const detLabel = det.n_boxes > 0
+        ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected${det.sensitive ? ' (sensitive mode, low confidence)' : ''}`
+        : 'No crack regions detected';
+      document.getElementById('det-caption').textContent = detLabel;
 
       document.getElementById('seg-img').src     = 'data:image/jpeg;base64,' + seg.image_b64;
       document.getElementById('seg-caption').textContent = `Crack coverage: ${seg.crack_pct.toFixed(1)}% of image area`;
@@ -287,11 +302,10 @@
 
     function resetResults() {
       document.getElementById('error-box').classList.add('hidden');
+      document.getElementById('consensus-box').classList.add('hidden');
       document.getElementById('cls-result').classList.add('hidden');
-      document.getElementById('cls-empty').classList.remove('hidden');
       document.getElementById('cls-result').classList.remove('in');
-      document.getElementById('cls-cracked-bar').style.width = '0%';
-      document.getElementById('cls-intact-bar').style.width  = '0%';
+      document.getElementById('cls-empty').classList.remove('hidden');
       const vis = document.getElementById('vis-results');
       vis.classList.add('hidden');
       vis.classList.remove('grid');
