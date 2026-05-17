@@ -6,6 +6,7 @@ data/
 
 # Model checkpoints (stored on Google Drive / Colab)
 checkpoints/
+webapp/models/
 
 # Outputs
 outputs/

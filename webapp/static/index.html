@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Albanian Heritage Damage Assessment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+    .hero-bg {
+      background-image: linear-gradient(to bottom, rgba(10,20,40,0.72) 0%, rgba(10,20,40,0.55) 60%, rgba(10,20,40,0.85) 100%),
+                        url('/static/images/heritage.webp');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .site-card { position: relative; overflow: hidden; border-radius: 1.25rem; }
+    .site-card img { transition: transform .5s ease; }
+    .site-card:hover img { transform: scale(1.05); }
+    .site-card .overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.78) 100%);
+    }
+    .site-card .content { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.25rem; }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.22);
+    }
+
+    .model-card { transition: transform .2s, box-shadow .2s; }
+    .model-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,.13); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- ── NAVBAR ─────────────────────────────────────────────────────────── -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <span class="font-semibold text-slate-900 tracking-wide text-sm">🏛 Heritage AI</span>
+      <a href="/analyze"
+         class="bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-5 py-2 rounded-full transition-colors">
+        Launch Tool →
+      </a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ───────────────────────────────────────────────────────────── -->
+  <section class="hero-bg min-h-[92vh] flex flex-col items-center justify-center text-white text-center px-6 pt-14">
+    <div class="max-w-3xl mx-auto">
+      <span class="inline-block bg-blue-500/25 border border-blue-400/35 text-blue-200 text-xs font-semibold px-3 py-1 rounded-full mb-7 tracking-widest uppercase">
+        Deep Learning · Cultural Heritage Preservation
+      </span>
+      <h1 class="text-5xl md:text-6xl leading-tight mb-6">
+        Albanian Heritage<br/>
+        <em>Damage Assessment</em>
+      </h1>
+      <p class="text-lg md:text-xl text-slate-300 leading-relaxed mb-10 max-w-2xl mx-auto">
+        AI-powered structural damage detection for UNESCO World Heritage sites —
+        <strong class="text-white">Berat</strong>,
+        <strong class="text-white">Gjirokastër</strong>, and
+        <strong class="text-white">Butrint</strong>.
+        Upload any masonry image and get a complete damage report in seconds.
+      </p>
+      <a href="/analyze"
+         class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg px-10 py-4 rounded-full transition-colors shadow-2xl mb-14">
+        Analyse an Image →
+      </a>
+
+      <!-- stat pills -->
+      <div class="flex flex-wrap justify-center gap-4">
+        <div class="stat-pill rounded-2xl px-6 py-4 text-center min-w-[130px]">
+          <div class="text-3xl font-bold">99.8%</div>
+          <div class="text-xs text-slate-300 mt-1">Classification Acc.</div>
+        </div>
+        <div class="stat-pill rounded-2xl px-6 py-4 text-center min-w-[130px]">
+          <div class="text-3xl font-bold">96.7%</div>
+          <div class="text-xs text-slate-300 mt-1">Detection mAP@50</div>
+        </div>
+        <div class="stat-pill rounded-2xl px-6 py-4 text-center min-w-[130px]">
+          <div class="text-3xl font-bold">83.6%</div>
+          <div class="text-xs text-slate-300 mt-1">Segmentation mIoU</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HERITAGE SITES ─────────────────────────────────────────────────── -->
+  <section class="max-w-6xl mx-auto px-6 py-24">
+    <div class="text-center mb-14">
+      <h2 class="text-4xl mb-3">Albanian World Heritage Sites</h2>
+      <p class="text-slate-500 max-w-xl mx-auto">
+        These UNESCO-listed sites face ongoing structural deterioration. Early damage detection
+        enables timely restoration and preservation of irreplaceable cultural heritage.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+
+      <!-- Berat -->
+      <div class="site-card shadow-lg h-72 cursor-pointer group" onclick="window.location='/analyze'">
+        <img src="/static/images/berat.webp" alt="Berat"
+             class="w-full h-full object-cover"/>
+        <div class="overlay"></div>
+        <div class="content">
+          <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">UNESCO 2008</span>
+          <h3 class="text-white text-2xl mt-1">Berat</h3>
+          <p class="text-slate-300 text-sm mt-1 leading-snug">
+            The "City of a Thousand Windows" — a living museum of Ottoman architecture.
+          </p>
+        </div>
+      </div>
+
+      <!-- Gjirokastër -->
+      <div class="site-card shadow-lg h-72 cursor-pointer group" onclick="window.location='/analyze'">
+        <img src="/static/images/gjirokaster.jpg" alt="Gjirokastër"
+             class="w-full h-full object-cover object-top"/>
+        <div class="overlay"></div>
+        <div class="content">
+          <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">UNESCO 2005</span>
+          <h3 class="text-white text-2xl mt-1">Gjirokastër</h3>
+          <p class="text-slate-300 text-sm mt-1 leading-snug">
+            A rare well-preserved Ottoman town built by powerful landlords in the 17–18th century.
+          </p>
+        </div>
+      </div>
+
+      <!-- Butrint -->
+      <div class="site-card shadow-lg h-72 cursor-pointer group" onclick="window.location='/analyze'">
+        <img src="/static/images/butrint.jpg" alt="Butrint"
+             class="w-full h-full object-cover"/>
+        <div class="overlay"></div>
+        <div class="content">
+          <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">UNESCO 1992</span>
+          <h3 class="text-white text-2xl mt-1">Butrint</h3>
+          <p class="text-slate-300 text-sm mt-1 leading-snug">
+            Ancient Greek and Roman city with millennia of occupation, surrounded by water.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── PIPELINE ───────────────────────────────────────────────────────── -->
+  <section class="bg-slate-900 text-white py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-14">
+        <h2 class="text-4xl mb-3">Three-Stage AI Pipeline</h2>
+        <p class="text-slate-400 max-w-xl mx-auto">
+          Three specialised deep-learning models run in parallel to give a complete damage picture
+          from a single image upload.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-7">
+
+        <div class="model-card bg-slate-800 rounded-2xl p-7 border border-slate-700">
+          <div class="text-4xl mb-5">🔍</div>
+          <h3 class="text-xl mb-3 font-semibold" style="font-family:Inter,sans-serif">Classification</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-5">
+            Binary intact / cracked classification with full confidence scores.
+          </p>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-slate-400"><span>Model</span><span class="text-slate-200">EfficientNet-B4</span></div>
+            <div class="flex justify-between text-slate-400"><span>Accuracy</span><span class="text-green-400 font-semibold">99.8%</span></div>
+            <div class="flex justify-between text-slate-400"><span>F1 Score</span><span class="text-green-400 font-semibold">99.6%</span></div>
+            <div class="flex justify-between text-slate-400"><span>AUC-ROC</span><span class="text-green-400 font-semibold">~100%</span></div>
+          </div>
+        </div>
+
+        <div class="model-card bg-slate-800 rounded-2xl p-7 border border-slate-700">
+          <div class="text-4xl mb-5">📦</div>
+          <h3 class="text-xl mb-3 font-semibold" style="font-family:Inter,sans-serif">Detection</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-5">
+            Bounding-box localisation of individual crack regions with confidence.
+          </p>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-slate-400"><span>Model</span><span class="text-slate-200">YOLOv8s</span></div>
+            <div class="flex justify-between text-slate-400"><span>mAP@50</span><span class="text-green-400 font-semibold">96.7%</span></div>
+            <div class="flex justify-between text-slate-400"><span>Fine-tuned</span><span class="text-blue-300">domain-adapted</span></div>
+          </div>
+        </div>
+
+        <div class="model-card bg-slate-800 rounded-2xl p-7 border border-slate-700">
+          <div class="text-4xl mb-5">🗺</div>
+          <h3 class="text-xl mb-3 font-semibold" style="font-family:Inter,sans-serif">Segmentation</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-5">
+            Pixel-level crack mapping with damage area percentage estimation.
+          </p>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-slate-400"><span>Model</span><span class="text-slate-200">U-Net / ResNet34</span></div>
+            <div class="flex justify-between text-slate-400"><span>mIoU</span><span class="text-green-400 font-semibold">83.6%</span></div>
+            <div class="flex justify-between text-slate-400"><span>Dice</span><span class="text-green-400 font-semibold">81.3%</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ────────────────────────────────────────────────────────────── -->
+  <section class="py-24 px-6 text-center">
+    <h2 class="text-4xl mb-4">Ready to assess your image?</h2>
+    <p class="text-slate-500 mb-8 max-w-md mx-auto text-lg">
+      Upload any masonry or stone surface image and get a full damage report in seconds.
+    </p>
+    <a href="/analyze"
+       class="inline-block bg-blue-700 hover:bg-blue-800 text-white font-semibold text-lg px-12 py-4 rounded-full transition-colors shadow-lg">
+      Launch the Tool →
+    </a>
+  </section>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="border-t border-slate-200 py-8 px-6 text-center text-sm text-slate-400">
+    Built for a Master's project in Computer Vision &nbsp;·&nbsp;
+    Models trained on OmniCrack30k, COCO-Crack, MasonryCrack &amp; CrackForest
+  </footer>
+
+</body>
+</html>

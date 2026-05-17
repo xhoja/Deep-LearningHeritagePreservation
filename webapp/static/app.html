@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analyse — Albanian Heritage Damage Assessment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    h1   { font-family: 'Playfair Display', serif; }
+
+    #drop-zone {
+      border: 2px dashed #cbd5e1;
+      transition: border-color .2s, background .2s;
+      cursor: pointer;
+    }
+    #drop-zone.drag-over { border-color: #3b82f6; background: #eff6ff; }
+    #drop-zone:hover     { border-color: #94a3b8; background: #f1f5f9; }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .bar { height: 10px; border-radius: 6px; background: #e2e8f0; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 6px; transition: width .7s cubic-bezier(.4,0,.2,1); }
+
+    .fade-up {
+      opacity: 0; transform: translateY(16px);
+      transition: opacity .45s ease, transform .45s ease;
+    }
+    .fade-up.in { opacity: 1; transform: translateY(0); }
+
+    .result-img { width: 100%; border-radius: 12px; object-fit: contain; background: #1e293b; }
+
+    .tab-btn { border-bottom: 2px solid transparent; }
+    .tab-btn.active { border-color: #3b82f6; color: #1d4ed8; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center gap-4">
+      <a href="/" class="text-slate-400 hover:text-slate-700 transition-colors text-sm flex items-center gap-1">
+        ← Home
+      </a>
+      <span class="text-slate-200">|</span>
+      <span class="font-semibold text-slate-800 text-sm">🏛 Albanian Heritage — Damage Analysis</span>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-6 py-10">
+
+    <div class="mb-8">
+      <h1 class="text-4xl text-slate-900 mb-2">Damage Analysis</h1>
+      <p class="text-slate-500">Upload a stone or masonry surface image. All three AI models run simultaneously.</p>
+    </div>
+
+    <!-- ── TOP SECTION: upload left, classification right ─────────────── -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+
+      <!-- Upload -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
+        <div id="drop-zone"
+             class="rounded-xl flex-1 flex flex-col items-center justify-center py-8 px-4 text-center min-h-[220px]"
+             onclick="document.getElementById('file-input').click()"
+             ondragover="onDragOver(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event)">
+          <input id="file-input" type="file" accept="image/*" class="hidden" onchange="onFileSelect(event)"/>
+          <div id="upload-prompt" class="flex flex-col items-center gap-2">
+            <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+            <p class="text-slate-500 font-medium text-sm">Drop image here or click to browse</p>
+          </div>
+          <img id="preview" class="hidden max-h-48 rounded-lg object-contain"/>
+        </div>
+
+        <!-- Examples -->
+        <div class="mt-4">
+          <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-2">Examples</p>
+          <div class="flex gap-2">
+            <img src="/examples/cracked_1.jpg" onclick="loadExample(this.src)" alt="Cracked"
+                 class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
+            <img src="/examples/cracked_2.jpg" onclick="loadExample(this.src)" alt="Cracked"
+                 class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
+            <img src="/examples/intact_1.jpg"  onclick="loadExample(this.src)" alt="Intact"
+                 class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
+          </div>
+        </div>
+
+        <button id="analyse-btn" onclick="analyse()" disabled
+                class="mt-5 w-full py-3 rounded-xl font-semibold text-white text-base
+                       bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed
+                       transition-colors">
+          Analyse Image
+        </button>
+      </div>
+
+      <!-- Classification result -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-5">
+            <span class="text-xl">🔍</span>
+            <span class="font-semibold text-slate-700">Classification</span>
+            <span class="ml-auto text-xs text-slate-400">EfficientNet-B4 · 99.8% acc</span>
+          </div>
+
+          <!-- Empty state -->
+          <div id="cls-empty" class="flex flex-col items-center justify-center py-10 text-slate-300">
+            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
+              <path stroke-linecap="round" stroke-width="1.5" d="M12 8v4m0 4h.01"/>
+            </svg>
+            <p class="text-sm">Awaiting image</p>
+          </div>
+
+          <!-- Result -->
+          <div id="cls-result" class="hidden fade-up">
+            <div id="cls-label" class="text-5xl font-bold mb-6"></div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-600 font-medium">Cracked</span>
+                  <span id="cls-cracked-pct" class="font-semibold text-slate-800"></span>
+                </div>
+                <div class="bar"><div id="cls-cracked-bar" class="bar-fill bg-red-500" style="width:0%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-600 font-medium">Intact</span>
+                  <span id="cls-intact-pct" class="font-semibold text-slate-800"></span>
+                </div>
+                <div class="bar"><div id="cls-intact-bar" class="bar-fill bg-emerald-500" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── LOADING ──────────────────────────────────────────────────────── -->
+    <div id="loading" class="hidden flex-col items-center justify-center py-14 gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
+      <div class="spinner"></div>
+      <div class="text-center">
+        <p class="text-slate-700 font-medium">Analysing image…</p>
+        <p class="text-slate-400 text-sm mt-1">Running 3 models in parallel — takes ~10s on CPU</p>
+      </div>
+    </div>
+
+    <!-- ── DETECTION + SEGMENTATION ─────────────────────────────────────── -->
+    <div id="vis-results" class="hidden grid md:grid-cols-2 gap-6 mb-6">
+
+      <!-- Detection -->
+      <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">📦</span>
+          <span class="font-semibold text-slate-700">Detection</span>
+          <span class="ml-auto text-xs text-slate-400">YOLOv8s · mAP@50 96.7%</span>
+        </div>
+        <img id="det-img" src="" alt="Detection" class="result-img mb-3"/>
+        <p id="det-caption" class="text-sm font-medium text-slate-700"></p>
+      </div>
+
+      <!-- Segmentation -->
+      <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">🗺</span>
+          <span class="font-semibold text-slate-700">Segmentation</span>
+          <span class="ml-auto text-xs text-slate-400">U-Net/ResNet34 · mIoU 83.6%</span>
+        </div>
+        <img id="seg-img" src="" alt="Segmentation" class="result-img mb-3"/>
+        <p id="seg-caption" class="text-sm font-medium text-slate-700"></p>
+      </div>
+
+    </div>
+
+    <!-- ERROR -->
+    <div id="error-box" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm"></div>
+
+  </main>
+
+  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+    Master's project · Computer Vision · Models: EfficientNet-B4, YOLOv8s, U-Net/ResNet34
+  </footer>
+
+  <script>
+    let currentFile = null;
+
+    function onDragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+    function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+    function onDrop(e) {
+      e.preventDefault();
+      document.getElementById('drop-zone').classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) setFile(f);
+    }
+    function onFileSelect(e) { const f = e.target.files[0]; if (f) setFile(f); }
+
+    function setFile(file) {
+      currentFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('upload-prompt').classList.add('hidden');
+        const prev = document.getElementById('preview');
+        prev.src = e.target.result;
+        prev.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+      document.getElementById('analyse-btn').disabled = false;
+      resetResults();
+    }
+
+    async function loadExample(src) {
+      const res  = await fetch(src);
+      const blob = await res.blob();
+      setFile(new File([blob], src.split('/').pop(), { type: blob.type }));
+    }
+
+    async function analyse() {
+      if (!currentFile) return;
+      resetResults();
+      showLoading();
+
+      const form = new FormData();
+      form.append('file', currentFile);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: form });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Server error'); }
+        render(await res.json());
+      } catch(e) {
+        document.getElementById('error-box').textContent = '⚠ ' + e.message;
+        document.getElementById('error-box').classList.remove('hidden');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function render(data) {
+      const { classification: cls, detection: det, segmentation: seg } = data;
+
+      // Classification
+      document.getElementById('cls-empty').classList.add('hidden');
+      const res = document.getElementById('cls-result');
+      res.classList.remove('hidden');
+      const lbl = document.getElementById('cls-label');
+      lbl.textContent = cls.label;
+      lbl.className   = 'text-5xl font-bold mb-6 ' + (cls.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
+      document.getElementById('cls-cracked-pct').textContent = cls.cracked_pct.toFixed(1) + '%';
+      document.getElementById('cls-intact-pct').textContent  = cls.intact_pct.toFixed(1)  + '%';
+      setTimeout(() => {
+        document.getElementById('cls-cracked-bar').style.width = cls.cracked_pct + '%';
+        document.getElementById('cls-intact-bar').style.width  = cls.intact_pct  + '%';
+        res.classList.add('in');
+      }, 60);
+
+      // Detection + Segmentation images
+      document.getElementById('det-img').src     = 'data:image/jpeg;base64,' + det.image_b64;
+      document.getElementById('det-caption').textContent =
+        det.n_boxes > 0 ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected` : 'No cracks detected';
+
+      document.getElementById('seg-img').src     = 'data:image/jpeg;base64,' + seg.image_b64;
+      document.getElementById('seg-caption').textContent = `Crack coverage: ${seg.crack_pct.toFixed(1)}% of image area`;
+
+      const vis = document.getElementById('vis-results');
+      vis.classList.remove('hidden');
+      vis.classList.add('grid');
+      setTimeout(() => {
+        vis.querySelectorAll('.fade-up').forEach((el, i) =>
+          setTimeout(() => el.classList.add('in'), i * 150));
+      }, 80);
+    }
+
+    function showLoading()  { document.getElementById('loading').classList.replace('hidden','flex'); }
+    function hideLoading()  { document.getElementById('loading').classList.replace('flex','hidden'); }
+
+    function resetResults() {
+      document.getElementById('error-box').classList.add('hidden');
+      document.getElementById('cls-result').classList.add('hidden');
+      document.getElementById('cls-empty').classList.remove('hidden');
+      document.getElementById('cls-result').classList.remove('in');
+      document.getElementById('cls-cracked-bar').style.width = '0%';
+      document.getElementById('cls-intact-bar').style.width  = '0%';
+      const vis = document.getElementById('vis-results');
+      vis.classList.add('hidden');
+      vis.classList.remove('grid');
+      vis.querySelectorAll('.fade-up').forEach(el => el.classList.remove('in'));
+    }
+  </script>
+</body>
+</html>
