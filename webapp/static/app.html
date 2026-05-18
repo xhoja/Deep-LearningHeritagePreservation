@@ -19,18 +19,6 @@
     #drop-zone.drag-over { border-color: #3b82f6; background: #eff6ff; }
     #drop-zone:hover     { border-color: #94a3b8; background: #f1f5f9; }
 
-    .spinner {
-      width: 48px; height: 48px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .bar { height: 10px; border-radius: 6px; background: #e2e8f0; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 6px; transition: width .7s cubic-bezier(.4,0,.2,1); }
-
     .fade-up {
       opacity: 0; transform: translateY(16px);
       transition: opacity .45s ease, transform .45s ease;
@@ -39,8 +27,35 @@
 
     .result-img { width: 100%; border-radius: 12px; object-fit: contain; background: #1e293b; }
 
-    .tab-btn { border-bottom: 2px solid transparent; }
-    .tab-btn.active { border-color: #3b82f6; color: #1d4ed8; font-weight: 600; }
+    /* ── Step loader ── */
+    .step-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      transition: background .3s, border-color .3s;
+    }
+    .step-spin .step-icon { border-color: transparent; }
+    .step-spin .step-num  { display: none; }
+    .step-spin .step-spinner { display: block !important; }
+    .step-done .step-icon { background: #10b981; border-color: #10b981; }
+    .step-done .step-num  { display: none; }
+    .step-done .step-check { display: block !important; }
+    .step-label { transition: color .3s; color: #94a3b8; }
+    .step-spin .step-label { color: #1e293b; font-weight: 600; }
+    .step-done .step-label { color: #6b7280; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Gauge ── */
+    .gauge-fill { transition: stroke-dasharray .9s cubic-bezier(.4,0,.2,1), stroke .4s; }
+
+    /* ── Thumb strip ── */
+    #thumb-list::-webkit-scrollbar { height: 4px; }
+    #thumb-list::-webkit-scrollbar-track { background: transparent; }
+    #thumb-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
   </style>
 </head>
 <body>
@@ -48,9 +63,7 @@
   <!-- NAVBAR -->
   <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
     <div class="max-w-5xl mx-auto px-6 h-14 flex items-center gap-4">
-      <a href="/" class="text-slate-400 hover:text-slate-700 transition-colors text-sm flex items-center gap-1">
-        ← Home
-      </a>
+      <a href="/" class="text-slate-400 hover:text-slate-700 transition-colors text-sm">← Home</a>
       <span class="text-slate-200">|</span>
       <span class="font-semibold text-slate-800 text-sm">Albanian Heritage Damage Analysis</span>
     </div>
@@ -60,29 +73,43 @@
 
     <div class="mb-8">
       <h1 class="text-4xl text-slate-900 mb-2">Damage Analysis</h1>
-      <p class="text-slate-500">Upload a stone or masonry surface image. All three AI models run simultaneously.</p>
+      <p class="text-slate-500">Upload one or more masonry images. All three AI models run on each.</p>
     </div>
 
-    <!-- ── TOP SECTION: upload left, classification right ─────────────── -->
+    <!-- ── TOP ROW: upload | classification ───────────────────────────────── -->
     <div class="grid md:grid-cols-2 gap-6 mb-6">
 
       <!-- Upload -->
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col">
+
+        <!-- Drop zone -->
         <div id="drop-zone"
-             class="rounded-xl flex-1 flex flex-col items-center justify-center py-8 px-4 text-center min-h-[220px]"
+             class="rounded-xl flex flex-col items-center justify-center py-8 px-4 text-center min-h-[160px]"
              onclick="document.getElementById('file-input').click()"
              ondragover="onDragOver(event)"
              ondragleave="onDragLeave(event)"
              ondrop="onDrop(event)">
-          <input id="file-input" type="file" accept="image/*" class="hidden" onchange="onFileSelect(event)"/>
-          <div id="upload-prompt" class="flex flex-col items-center gap-2">
-            <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-            </svg>
-            <p class="text-slate-500 font-medium text-sm">Drop image here or click to browse</p>
+          <input id="file-input" type="file" accept="image/*" multiple class="hidden" onchange="onFileSelect(event)"/>
+          <svg class="w-10 h-10 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+          </svg>
+          <p class="text-slate-500 font-medium text-sm">Drop images here or click to browse</p>
+          <p class="text-slate-400 text-xs mt-1">Multiple files supported</p>
+        </div>
+
+        <!-- Thumbnail queue strip -->
+        <div id="thumb-strip" class="hidden mt-3">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest">
+              Queue · <span id="queue-count">0</span> image(s)
+            </p>
+            <button onclick="clearQueue()"
+                    class="text-xs text-slate-400 hover:text-red-500 transition-colors">
+              Clear all
+            </button>
           </div>
-          <img id="preview" class="hidden max-h-48 rounded-lg object-contain"/>
+          <div id="thumb-list" class="flex gap-2 overflow-x-auto pb-1"></div>
         </div>
 
         <!-- Examples -->
@@ -98,7 +125,7 @@
           </div>
         </div>
 
-        <button id="analyse-btn" onclick="analyse()" disabled
+        <button id="analyse-btn" onclick="analyseAll()" disabled
                 class="mt-5 w-full py-3 rounded-xl font-semibold text-white text-base
                        bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed
                        transition-colors">
@@ -106,56 +133,103 @@
         </button>
       </div>
 
-      <!-- Classification result -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
-        <div>
-          <div class="flex items-center gap-2 mb-5">
-            <span class="font-semibold text-slate-700">Classification</span>
-            <span class="ml-auto text-xs text-slate-400">EfficientNet-B4 · 99.8% acc</span>
-          </div>
+      <!-- Classification -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+        <div class="flex items-center gap-2 mb-5">
+          <span class="font-semibold text-slate-700">Classification</span>
+          <span id="img-counter" class="hidden text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium"></span>
+          <span class="ml-auto text-xs text-slate-400">EfficientNet-B4 · 99.8% acc</span>
+        </div>
 
-          <!-- Empty state -->
-          <div id="cls-empty" class="flex flex-col items-center justify-center py-10 text-slate-300">
-            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
-              <path stroke-linecap="round" stroke-width="1.5" d="M12 8v4m0 4h.01"/>
-            </svg>
-            <p class="text-sm">Awaiting image</p>
-          </div>
+        <div id="cls-empty" class="flex flex-col items-center justify-center py-10 text-slate-300 flex-1">
+          <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" stroke-width="1.5"/>
+            <path stroke-linecap="round" stroke-width="1.5" d="M12 8v4m0 4h.01"/>
+          </svg>
+          <p class="text-sm">Awaiting image</p>
+        </div>
 
-          <!-- Result -->
-          <div id="cls-result" class="hidden fade-up">
-            <div class="flex items-baseline gap-4 mb-4">
-              <div id="cls-label" class="text-4xl font-bold"></div>
-              <div class="text-right ml-auto">
-                <div class="text-xs text-slate-400 mb-0.5">Cracked</div>
-                <span id="cls-cracked-pct" class="font-bold text-slate-800 text-lg"></span>
-              </div>
+        <div id="cls-result" class="hidden fade-up">
+          <div class="flex items-baseline gap-4 mb-4">
+            <div id="cls-label" class="text-4xl font-bold"></div>
+            <div class="text-right ml-auto">
+              <div class="text-xs text-slate-400 mb-0.5">Cracked</div>
+              <span id="cls-cracked-pct" class="font-bold text-slate-800 text-lg"></span>
             </div>
-            <img id="cls-cam-img" src="" alt="Grad-CAM" class="result-img mb-3"/>
-            <p class="text-xs text-slate-400">Grad-CAM: red regions drove the classification decision</p>
           </div>
+          <img id="cls-cam-img" src="" alt="Grad-CAM" class="result-img mb-3"/>
+          <p class="text-xs text-slate-400">Grad-CAM: red regions drove the classification decision</p>
         </div>
       </div>
-
     </div>
 
-    <!-- ── CONSENSUS NOTE ────────────────────────────────────────────────── -->
-    <div id="consensus-box" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-4 text-sm leading-relaxed"></div>
+    <!-- ── BATCH PROGRESS BANNER ──────────────────────────────────────────── -->
+    <div id="batch-banner" class="hidden mb-6 bg-blue-50 border border-blue-100 rounded-xl px-5 py-3 flex items-center gap-3">
+      <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full flex-shrink-0"
+           style="animation: spin .7s linear infinite;"></div>
+      <span id="batch-banner-text" class="text-sm text-blue-700 font-medium"></span>
+    </div>
 
-    <!-- ── LOADING ──────────────────────────────────────────────────────── -->
-    <div id="loading" class="hidden flex-col items-center justify-center py-14 gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
-      <div class="spinner"></div>
-      <div class="text-center">
-        <p class="text-slate-700 font-medium">Analysing image…</p>
-        <p class="text-slate-400 text-sm mt-1">Running 3 models in parallel — takes ~10s on CPU</p>
+    <!-- ── SEVERITY CARD ───────────────────────────────────────────────────── -->
+    <div id="severity-card" class="hidden mb-6 fade-up">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-5">
+        <div id="severity-badge"
+             class="rounded-xl px-5 py-3 text-center font-bold text-lg min-w-[120px] flex-shrink-0 tracking-wide">
+        </div>
+        <div class="flex-1 min-w-0">
+          <p id="severity-title" class="font-semibold text-slate-800 text-base"></p>
+          <p id="severity-detail" class="text-slate-500 text-sm mt-0.5 leading-snug"></p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p id="severity-vote-count" class="text-2xl font-bold text-slate-800"></p>
+          <p class="text-xs text-slate-400">models agree</p>
+        </div>
       </div>
     </div>
 
-    <!-- ── DETECTION + SEGMENTATION ─────────────────────────────────────── -->
+    <!-- ── STEP LOADER (single-image mode only) ───────────────────────────── -->
+    <div id="loading" class="hidden flex-col items-center justify-center py-14 gap-7 bg-white rounded-2xl border border-slate-200 shadow-sm mb-6">
+      <div class="flex flex-col gap-4 w-60">
+        <div id="step-classify" class="step-item flex items-center gap-3">
+          <div class="step-icon">
+            <span class="step-num text-xs text-slate-400 font-semibold">1</span>
+            <div class="step-spinner hidden absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent"
+                 style="animation: spin .7s linear infinite;"></div>
+            <svg class="step-check hidden w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <span class="step-label text-sm">Classifying surface</span>
+        </div>
+        <div id="step-detect" class="step-item flex items-center gap-3">
+          <div class="step-icon">
+            <span class="step-num text-xs text-slate-400 font-semibold">2</span>
+            <div class="step-spinner hidden absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent"
+                 style="animation: spin .7s linear infinite;"></div>
+            <svg class="step-check hidden w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <span class="step-label text-sm">Detecting crack regions</span>
+        </div>
+        <div id="step-segment" class="step-item flex items-center gap-3">
+          <div class="step-icon">
+            <span class="step-num text-xs text-slate-400 font-semibold">3</span>
+            <div class="step-spinner hidden absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent"
+                 style="animation: spin .7s linear infinite;"></div>
+            <svg class="step-check hidden w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <span class="step-label text-sm">Segmenting pixel mask</span>
+        </div>
+      </div>
+      <p class="text-slate-400 text-xs">Running in parallel — ~10s on CPU</p>
+    </div>
+
+    <!-- ── DETECTION + SEGMENTATION ───────────────────────────────────────── -->
     <div id="vis-results" class="hidden grid md:grid-cols-2 gap-6 mb-6">
 
-      <!-- Detection -->
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
           <span class="font-semibold text-slate-700">Detection</span>
@@ -165,20 +239,54 @@
         <p id="det-caption" class="text-sm font-medium text-slate-700"></p>
       </div>
 
-      <!-- Segmentation -->
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
           <span class="font-semibold text-slate-700">Segmentation</span>
           <span class="ml-auto text-xs text-slate-400">U-Net/ResNet34 · mIoU 83.6%</span>
         </div>
         <img id="seg-img" src="" alt="Segmentation" class="result-img mb-3"/>
-        <p id="seg-caption" class="text-sm font-medium text-slate-700"></p>
+        <div class="flex items-center gap-4 mt-1">
+          <svg viewBox="0 0 90 90" width="80" height="80" class="flex-shrink-0">
+            <circle cx="45" cy="45" r="35"
+                    fill="none" stroke="#e2e8f0" stroke-width="8"
+                    stroke-dasharray="165 55"
+                    transform="rotate(135 45 45)"
+                    stroke-linecap="round"/>
+            <circle id="gauge-fill" cx="45" cy="45" r="35"
+                    fill="none" stroke="#10b981" stroke-width="8"
+                    stroke-dasharray="0 220"
+                    transform="rotate(135 45 45)"
+                    stroke-linecap="round"
+                    class="gauge-fill"/>
+            <text id="gauge-text" x="45" y="49" text-anchor="middle"
+                  font-size="13" fill="#1e293b" font-weight="700"
+                  font-family="Inter, sans-serif">0%</text>
+            <text x="45" y="62" text-anchor="middle"
+                  font-size="7" fill="#94a3b8"
+                  font-family="Inter, sans-serif">crack area</text>
+          </svg>
+          <div>
+            <p id="seg-caption" class="text-sm font-semibold text-slate-700">—</p>
+            <p class="text-xs text-slate-400 mt-0.5">of image area</p>
+          </div>
+        </div>
       </div>
-
     </div>
 
-    <!-- ERROR -->
-    <div id="error-box" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm"></div>
+    <!-- ── DOWNLOAD ROW ────────────────────────────────────────────────────── -->
+    <div id="download-row" class="hidden mb-6 flex justify-end">
+      <button onclick="downloadReport()"
+              class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200
+                     text-slate-700 font-medium text-sm px-5 py-2.5 rounded-xl transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Download Report (.json)
+      </button>
+    </div>
+
+    <div id="error-box" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm mb-6"></div>
 
   </main>
 
@@ -187,62 +295,330 @@
   </footer>
 
   <script>
-    let currentFile = null;
+    // ── State ──────────────────────────────────────────────────────────────
+    const queue = [];       // { file, objectUrl, status: pending|running|done|error, results, error }
+    let selectedIdx  = -1;
+    let isProcessing = false;
+    let lastResults  = null;
+    let currentSeverity = 'NONE';
+    let stepTimers   = [];
 
+    // ── File input ─────────────────────────────────────────────────────────
     function onDragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
     function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
     function onDrop(e) {
       e.preventDefault();
       document.getElementById('drop-zone').classList.remove('drag-over');
-      const f = e.dataTransfer.files[0];
-      if (f && f.type.startsWith('image/')) setFile(f);
+      const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+      if (files.length) addFiles(files);
     }
-    function onFileSelect(e) { const f = e.target.files[0]; if (f) setFile(f); }
-
-    function setFile(file) {
-      currentFile = file;
-      const reader = new FileReader();
-      reader.onload = e => {
-        document.getElementById('upload-prompt').classList.add('hidden');
-        const prev = document.getElementById('preview');
-        prev.src = e.target.result;
-        prev.classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
-      document.getElementById('analyse-btn').disabled = false;
-      resetResults();
+    function onFileSelect(e) {
+      const files = [...e.target.files];
+      if (files.length) addFiles(files);
+      e.target.value = '';
     }
 
     async function loadExample(src) {
       const res  = await fetch(src);
       const blob = await res.blob();
-      setFile(new File([blob], src.split('/').pop(), { type: blob.type }));
+      addFiles([new File([blob], src.split('/').pop(), { type: blob.type })]);
     }
 
-    async function analyse() {
-      if (!currentFile) return;
+    function addFiles(files) {
+      for (const f of files) {
+        queue.push({ file: f, objectUrl: URL.createObjectURL(f), status: 'pending', results: null, error: null });
+      }
+      renderThumbs();
+      updateAnalyseBtn();
+      if (selectedIdx === -1) selectImage(0);
+    }
+
+    // ── Queue UI ───────────────────────────────────────────────────────────
+    function renderThumbs() {
+      const strip = document.getElementById('thumb-strip');
+      if (queue.length === 0) { strip.classList.add('hidden'); return; }
+      strip.classList.remove('hidden');
+      document.getElementById('queue-count').textContent = queue.length;
+
+      document.getElementById('thumb-list').innerHTML = queue.map((item, i) => {
+        const sel = i === selectedIdx;
+        let overlay = '';
+        if (item.status === 'running') {
+          overlay = `<div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-white border-t-transparent flex-shrink-0"
+                 style="animation:spin .7s linear infinite"></div>
+          </div>`;
+        } else if (item.status === 'done') {
+          overlay = `<div class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow">
+            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>`;
+        } else if (item.status === 'error') {
+          overlay = `<div class="absolute bottom-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow">
+            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </div>`;
+        }
+        const removeBtn = item.status !== 'running'
+          ? `<button class="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 hover:bg-black/80 rounded-full
+                            hidden group-hover:flex items-center justify-center z-10 transition-colors"
+                    onclick="event.stopPropagation(); removeFromQueue(${i})">
+               <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+               </svg>
+             </button>`
+          : '';
+        return `<div class="group relative flex-shrink-0 cursor-pointer rounded-lg overflow-hidden transition-all
+                            ${sel ? 'ring-2 ring-blue-500' : 'ring-2 ring-transparent hover:ring-slate-300'}"
+                     style="width:56px;height:56px;"
+                     onclick="selectImage(${i})">
+          <img src="${item.objectUrl}" class="w-full h-full object-cover"/>
+          ${overlay}
+          ${removeBtn}
+        </div>`;
+      }).join('');
+    }
+
+    function updateAnalyseBtn() {
+      const btn     = document.getElementById('analyse-btn');
+      const pending = queue.filter(q => q.status === 'pending').length;
+      btn.disabled  = pending === 0 || isProcessing;
+      if (queue.length === 0)  btn.textContent = 'Analyse Image';
+      else if (pending === 0)  btn.textContent = 'All Analysed';
+      else btn.textContent = `Analyse ${pending} Image${pending !== 1 ? 's' : ''}`;
+    }
+
+    function updateCounter() {
+      const el = document.getElementById('img-counter');
+      if (queue.length <= 1) { el.classList.add('hidden'); return; }
+      el.classList.remove('hidden');
+      el.textContent = `${selectedIdx + 1} / ${queue.length}`;
+    }
+
+    function clearQueue() {
+      if (isProcessing) return;
+      queue.forEach(item => URL.revokeObjectURL(item.objectUrl));
+      queue.length = 0;
+      selectedIdx  = -1;
+      lastResults  = null;
+      currentSeverity = 'NONE';
+      renderThumbs();
+      updateAnalyseBtn();
       resetResults();
-      showLoading();
+      document.getElementById('img-counter').classList.add('hidden');
+    }
 
-      const form = new FormData();
-      form.append('file', currentFile);
+    function removeFromQueue(idx) {
+      if (queue[idx].status === 'running') return;
+      URL.revokeObjectURL(queue[idx].objectUrl);
+      queue.splice(idx, 1);
 
-      try {
-        const res = await fetch('/predict', { method: 'POST', body: form });
-        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Server error'); }
-        render(await res.json());
-      } catch(e) {
-        document.getElementById('error-box').textContent = e.message;
+      if (queue.length === 0) {
+        selectedIdx = -1;
+        resetResults();
+        renderThumbs();
+        updateAnalyseBtn();
+        document.getElementById('img-counter').classList.add('hidden');
+        return;
+      }
+
+      if (selectedIdx > idx)       selectedIdx--;
+      else if (selectedIdx === idx) selectedIdx = Math.min(idx, queue.length - 1);
+
+      renderThumbs();
+      updateAnalyseBtn();
+      selectImage(selectedIdx);
+    }
+
+    // ── Select image ───────────────────────────────────────────────────────
+    function selectImage(idx) {
+      if (idx < 0 || idx >= queue.length) return;
+      selectedIdx = idx;
+      renderThumbs();
+      updateCounter();
+      const item = queue[idx];
+      if (item.results) {
+        renderResults(item.results);
+      } else if (item.status === 'error') {
+        resetResults();
+        document.getElementById('error-box').textContent = item.error;
         document.getElementById('error-box').classList.remove('hidden');
-      } finally {
-        hideLoading();
+      } else {
+        resetResults();
       }
     }
 
-    function render(data) {
+    // ── Analyse ────────────────────────────────────────────────────────────
+    async function analyseAll() {
+      if (isProcessing) return;
+      isProcessing = true;
+      updateAnalyseBtn();
+
+      const pendingCount = queue.filter(q => q.status === 'pending').length;
+      const isBatch      = pendingCount > 1;
+
+      for (let i = 0; i < queue.length; i++) {
+        if (queue[i].status !== 'pending') continue;
+
+        queue[i].status = 'running';
+        renderThumbs();
+
+        if (isBatch) {
+          const done  = queue.filter(q => q.status === 'done' || q.status === 'error').length;
+          document.getElementById('batch-banner-text').textContent =
+            `Processing image ${done + 1} of ${pendingCount}…`;
+          document.getElementById('batch-banner').classList.remove('hidden');
+        } else {
+          selectedIdx = i;
+          updateCounter();
+          resetResults();
+          showLoading();
+        }
+
+        const form = new FormData();
+        form.append('file', queue[i].file);
+
+        try {
+          const res = await fetch('/predict', { method: 'POST', body: form });
+          if (!res.ok) throw new Error((await res.json()).detail || 'Server error');
+          const data = await res.json();
+          queue[i].results = data;
+          queue[i].status  = 'done';
+
+          if (!isBatch) {
+            await hideLoading(false);
+            renderResults(data);
+          } else {
+            // Render if user is viewing this image; thumbnail click handles the rest
+            if (selectedIdx === i) renderResults(data);
+          }
+        } catch(e) {
+          queue[i].status = 'error';
+          queue[i].error  = e.message;
+          if (!isBatch) {
+            hideLoading(true);
+            document.getElementById('error-box').textContent = e.message;
+            document.getElementById('error-box').classList.remove('hidden');
+          }
+        }
+
+        renderThumbs();
+        updateAnalyseBtn();
+      }
+
+      if (isBatch) document.getElementById('batch-banner').classList.add('hidden');
+      isProcessing = false;
+      updateAnalyseBtn();
+    }
+
+    // ── Step loader (single-image) ─────────────────────────────────────────
+    function setStepState(id, state) {
+      const el = document.getElementById(id);
+      el.classList.remove('step-spin', 'step-done');
+      if (state === 'active') el.classList.add('step-spin');
+      if (state === 'done')   el.classList.add('step-done');
+    }
+
+    function showLoading() {
+      stepTimers.forEach(clearTimeout);
+      stepTimers = [];
+      ['step-classify','step-detect','step-segment'].forEach(id => setStepState(id, 'pending'));
+      document.getElementById('loading').classList.replace('hidden', 'flex');
+      setStepState('step-classify', 'active');
+      stepTimers.push(setTimeout(() => {
+        setStepState('step-classify', 'done');
+        setStepState('step-detect', 'active');
+      }, 2500));
+      stepTimers.push(setTimeout(() => {
+        setStepState('step-detect', 'done');
+        setStepState('step-segment', 'active');
+      }, 5000));
+    }
+
+    function hideLoading(isError) {
+      stepTimers.forEach(clearTimeout);
+      stepTimers = [];
+      const el = document.getElementById('loading');
+      if (isError) { el.classList.replace('flex', 'hidden'); return Promise.resolve(); }
+      return new Promise(resolve => {
+        setStepState('step-classify', 'done');
+        setStepState('step-detect',   'done');
+        setTimeout(() => setStepState('step-segment', 'done'), 160);
+        setTimeout(() => { el.classList.replace('flex', 'hidden'); resolve(); }, 750);
+      });
+    }
+
+    // ── Severity ───────────────────────────────────────────────────────────
+    const SEV = {
+      CRITICAL: { bg: 'bg-red-600',     text: 'text-white',      title: 'Critical structural damage detected'  },
+      HIGH:     { bg: 'bg-orange-500',  text: 'text-white',      title: 'Significant damage detected'          },
+      MODERATE: { bg: 'bg-yellow-400',  text: 'text-yellow-900', title: 'Moderate damage present'              },
+      LOW:      { bg: 'bg-blue-500',    text: 'text-white',      title: 'Minor or uncertain damage indicators' },
+      NONE:     { bg: 'bg-emerald-500', text: 'text-white',      title: 'No significant damage detected'       },
+    };
+
+    function getSeverity(clsIsCracked, detFound, segFound, crackPct) {
+      const votes = [clsIsCracked, detFound, segFound].filter(Boolean).length;
+      if (votes === 3 && crackPct > 10) return 'CRITICAL';
+      if (votes === 3 || (votes === 2 && crackPct > 5)) return 'HIGH';
+      if (votes === 2 || (votes === 1 && crackPct > 2)) return 'MODERATE';
+      if (votes === 1) return 'LOW';
+      return 'NONE';
+    }
+
+    function renderSeverity(severity, clsIsCracked, detFound, segFound) {
+      const cfg   = SEV[severity];
+      const votes = [clsIsCracked, detFound, segFound].filter(Boolean).length;
+
+      const badge = document.getElementById('severity-badge');
+      badge.className = `rounded-xl px-5 py-3 text-center font-bold text-lg min-w-[120px] flex-shrink-0 tracking-wide ${cfg.bg} ${cfg.text}`;
+      badge.textContent = severity;
+      document.getElementById('severity-title').textContent = cfg.title;
+      document.getElementById('severity-vote-count').textContent = `${votes}/3`;
+
+      const agree = [], disagree = [];
+      if (clsIsCracked) agree.push('Classifier'); else disagree.push('Classifier');
+      if (detFound)     agree.push('Detector');   else disagree.push('Detector');
+      if (segFound)     agree.push('Segmentor');  else disagree.push('Segmentor');
+
+      let detail;
+      if (votes === 0) detail = 'All models indicate no cracking.';
+      else if (votes === 3) detail = 'All three models agree on crack presence.';
+      else {
+        const verb = disagree.length === 1 ? 'does' : 'do';
+        detail = `${agree.join(' & ')} detect cracking; ${disagree.join(' & ')} ${verb} not.`;
+      }
+      document.getElementById('severity-detail').textContent = detail;
+
+      const card = document.getElementById('severity-card');
+      card.classList.remove('hidden');
+      setTimeout(() => card.classList.add('in'), 60);
+    }
+
+    // ── Gauge ──────────────────────────────────────────────────────────────
+    function updateGauge(pct) {
+      const C       = 219.9;
+      const maxDash = C * 0.75;
+      const dash    = Math.min((pct / 100) * maxDash, maxDash);
+
+      let color = '#10b981';
+      if (pct > 30)      color = '#ef4444';
+      else if (pct > 15) color = '#f97316';
+      else if (pct > 5)  color = '#eab308';
+
+      const fill = document.getElementById('gauge-fill');
+      fill.setAttribute('stroke-dasharray', `${dash.toFixed(1)} ${(C - dash).toFixed(1)}`);
+      fill.setAttribute('stroke', color);
+      document.getElementById('gauge-text').textContent = pct.toFixed(1) + '%';
+    }
+
+    // ── Render results ─────────────────────────────────────────────────────
+    function renderResults(data) {
+      lastResults = data;
       const { classification: cls, detection: det, segmentation: seg } = data;
 
-      // Classification
       document.getElementById('cls-empty').classList.add('hidden');
       const res = document.getElementById('cls-result');
       res.classList.remove('hidden');
@@ -251,42 +627,22 @@
       lbl.className   = 'text-4xl font-bold ' + (cls.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
       document.getElementById('cls-cracked-pct').textContent = cls.cracked_pct.toFixed(1) + '%';
       document.getElementById('cls-cam-img').src = 'data:image/jpeg;base64,' + cls.cam_b64;
-      setTimeout(() => { res.classList.add('in'); }, 60);
+      setTimeout(() => res.classList.add('in'), 60);
 
-      // Consensus note when models disagree
       const clsIsCracked = cls.label === 'Cracked';
       const detFound     = det.n_boxes > 0 && !det.sensitive;
       const segFound     = seg.crack_pct > 1.0;
-      const votes        = [clsIsCracked, detFound, segFound].filter(Boolean).length;
-      const consensusBox = document.getElementById('consensus-box');
-      if (votes > 0 && votes < 3) {
-        const agree   = [];
-        const disagree = [];
-        if (clsIsCracked) agree.push('Classifier'); else disagree.push('Classifier');
-        if (detFound)     agree.push('Detector');   else disagree.push('Detector');
-        if (segFound)     agree.push('Segmentor');  else disagree.push('Segmentor');
-        let note = `${votes}/3 models detect damage. `;
-        if (votes >= 2) {
-          note += `${agree.join(' and ')} indicate cracking; ${disagree.join(' and ')} found no significant crack regions. `;
-        } else {
-          note += `Only ${agree.join(' and ')} indicates cracking; ${disagree.join(' and ')} found no significant crack regions. `;
-        }
-        note += 'This can occur when cracks are fine-grained (visible to classifier/segmentor but below detector confidence threshold).';
-        consensusBox.textContent = note;
-        consensusBox.classList.remove('hidden');
-      } else {
-        consensusBox.classList.add('hidden');
-      }
+      currentSeverity    = getSeverity(clsIsCracked, detFound, segFound, seg.crack_pct);
+      renderSeverity(currentSeverity, clsIsCracked, detFound, segFound);
 
-      // Detection + Segmentation images
       document.getElementById('det-img').src = 'data:image/jpeg;base64,' + det.image_b64;
-      const detLabel = det.n_boxes > 0
-        ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected${det.sensitive ? ' (sensitive mode, low confidence)' : ''}`
+      document.getElementById('det-caption').textContent = det.n_boxes > 0
+        ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected${det.sensitive ? ' (sensitive mode)' : ''}`
         : 'No crack regions detected';
-      document.getElementById('det-caption').textContent = detLabel;
 
-      document.getElementById('seg-img').src     = 'data:image/jpeg;base64,' + seg.image_b64;
-      document.getElementById('seg-caption').textContent = `Crack coverage: ${seg.crack_pct.toFixed(1)}% of image area`;
+      document.getElementById('seg-img').src = 'data:image/jpeg;base64,' + seg.image_b64;
+      document.getElementById('seg-caption').textContent = seg.crack_pct.toFixed(1) + '%';
+      updateGauge(seg.crack_pct);
 
       const vis = document.getElementById('vis-results');
       vis.classList.remove('hidden');
@@ -295,17 +651,45 @@
         vis.querySelectorAll('.fade-up').forEach((el, i) =>
           setTimeout(() => el.classList.add('in'), i * 150));
       }, 80);
+
+      document.getElementById('download-row').classList.remove('hidden');
     }
 
-    function showLoading()  { document.getElementById('loading').classList.replace('hidden','flex'); }
-    function hideLoading()  { document.getElementById('loading').classList.replace('flex','hidden'); }
+    // ── Download ───────────────────────────────────────────────────────────
+    function downloadReport() {
+      if (!lastResults) return;
+      const { classification: cls, detection: det, segmentation: seg } = lastResults;
+      const report = {
+        timestamp: new Date().toISOString(),
+        severity: currentSeverity,
+        classification: { label: cls.label, cracked_probability_pct: +cls.cracked_pct.toFixed(2) },
+        detection:       { crack_regions_found: det.n_boxes, sensitive_mode: det.sensitive || false },
+        segmentation:    { crack_coverage_pct: +seg.crack_pct.toFixed(2) },
+      };
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: `heritage-report-${Date.now()}.json` });
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
+    // ── Reset ──────────────────────────────────────────────────────────────
     function resetResults() {
-      document.getElementById('error-box').classList.add('hidden');
-      document.getElementById('consensus-box').classList.add('hidden');
-      document.getElementById('cls-result').classList.add('hidden');
-      document.getElementById('cls-result').classList.remove('in');
+      lastResults     = null;
+      currentSeverity = 'NONE';
+
+      ['error-box','download-row'].forEach(id =>
+        document.getElementById(id).classList.add('hidden'));
+
+      const sev = document.getElementById('severity-card');
+      sev.classList.add('hidden');
+      sev.classList.remove('in');
+
+      const clsRes = document.getElementById('cls-result');
+      clsRes.classList.add('hidden');
+      clsRes.classList.remove('in');
       document.getElementById('cls-empty').classList.remove('hidden');
+
       const vis = document.getElementById('vis-results');
       vis.classList.add('hidden');
       vis.classList.remove('grid');

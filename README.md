@@ -414,6 +414,30 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 
 ---
 
+## Web Application
+
+FastAPI demo in `webapp/`. Upload masonry images and get a full three-model damage report in the browser.
+
+**Features:**
+- **Multi-image batch mode** — drop multiple files; results processed sequentially with live thumbnail status badges (pending → running → done/error); click any completed thumbnail to review its results
+- **Animated step loader** — Classifying → Detecting → Segmenting with checkmarks (single-image mode)
+- **Severity summary card** — CRITICAL / HIGH / MODERATE / LOW / NONE verdict derived from model consensus (X/3 models agree), with per-model agree/disagree breakdown
+- **Crack arc gauge** — SVG donut gauge colour-coded by coverage (<5% green, 5–15% yellow, 15–30% orange, >30% red)
+- **Grad-CAM overlay** — EfficientNet-B4 attention map on the uploaded image
+- **JSON report download** — exports severity, classification, detection, and segmentation results with timestamp
+
+**Run locally:**
+```bash
+cd webapp
+pip install fastapi uvicorn pillow torch torchvision ultralytics segmentation-models-pytorch
+uvicorn app:app --reload --port 8000
+# open http://localhost:8000
+```
+
+> **Note on classifier vs. detector/segmentor agreement:** In practice the classifier occasionally disagrees with the detector and segmentor on fine-grained heritage cracks. The detector and segmentor share a spatial-feature inductive bias that transfers better across domains; the classifier operates on global image statistics and is more sensitive to domain shift. The severity card surfaces this disagreement explicitly rather than hiding it.
+
+---
+
 ## Validation Samples
 
 The `samples/` directory contains representative test images for quick pipeline validation without rerunning full evaluation. Covers:
@@ -461,6 +485,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, 4.8% → 64.1% mAP@50
 - [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
 - [x] Populate `samples/` with validation images (saved via notebook 06)
+- [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, JSON export
 - [ ] Write project report (`report/report.pdf`)
 - [ ] Write article reading survey (`report/article_survey.pdf`)
 
