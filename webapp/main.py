@@ -298,6 +298,11 @@ def home():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/about")
+def about_page():
+    return FileResponse(STATIC_DIR / "about.html")
+
+
 @app.get("/analyze")
 def analyze_page():
     return FileResponse(STATIC_DIR / "app.html")

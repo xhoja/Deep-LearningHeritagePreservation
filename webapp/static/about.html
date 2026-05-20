@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About — Albanian Heritage Damage Assessment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+    .model-card { transition: transform .2s, box-shadow .2s; }
+    .model-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,.1); }
+    .pipeline-arrow { color: #94a3b8; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center gap-6">
+      <a href="/" class="font-semibold text-slate-900 tracking-wide text-sm">Heritage AI</a>
+      <span class="text-slate-200">|</span>
+      <a href="/about" class="text-sm font-medium text-blue-700">About</a>
+      <a href="/analyze"
+         class="ml-auto bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-5 py-2 rounded-full transition-colors">
+        Analyse an Image →
+      </a>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-6 py-14">
+
+    <!-- HEADER -->
+    <div class="mb-14 max-w-3xl">
+      <h1 class="text-5xl text-slate-900 mb-4">About this Project</h1>
+      <p class="text-lg text-slate-500 leading-relaxed">
+        A Master's research project applying deep learning to structural damage detection
+        in Albanian UNESCO World Heritage Sites — combining classification, object detection,
+        and semantic segmentation in a single pipeline.
+      </p>
+    </div>
+
+    <!-- MOTIVATION -->
+    <section class="mb-16">
+      <h2 class="text-3xl text-slate-900 mb-6">Motivation</h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-800 mb-2" style="font-family:Inter,sans-serif">The Problem</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            Albania's UNESCO-listed heritage sites — <strong class="text-slate-700">Berat</strong>,
+            <strong class="text-slate-700">Gjirokastër</strong>, and
+            <strong class="text-slate-700">Butrint</strong> — face ongoing structural deterioration
+            from weathering, seismic activity, and neglect. Manual inspection is slow, expensive,
+            and inconsistent. Hairline cracks that go undetected can escalate into irreversible structural failure.
+          </p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-800 mb-2" style="font-family:Inter,sans-serif">The AI Solution</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            Deep learning enables scalable, repeatable damage assessment from photographs alone.
+            A three-model pipeline answers three questions simultaneously:
+            <em>Is this structure damaged?</em> (classification),
+            <em>Where are the cracks?</em> (detection), and
+            <em>What fraction is damaged?</em> (segmentation).
+            Together they provide actionable triage without specialist access.
+          </p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582 4 8 4"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-800 mb-2" style="font-family:Inter,sans-serif">Training Data</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            Models were trained on four open datasets spanning 30,000+ images:
+            <strong class="text-slate-700">OmniCrack30k</strong> (large-scale crack detection),
+            <strong class="text-slate-700">COCO-Crack</strong>,
+            <strong class="text-slate-700">MasonryCrack</strong> (stone &amp; brick surfaces), and
+            <strong class="text-slate-700">CrackForest</strong> (pavement).
+            Fine-tuning on masonry-specific data bridges the domain gap to heritage stone walls.
+          </p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-800 mb-2" style="font-family:Inter,sans-serif">Evaluation</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">
+            Performance was measured on held-out test sets with standard metrics:
+            accuracy &amp; F1 for classification, mAP@50 for detection, and mIoU + Dice for segmentation.
+            Cross-dataset evaluation exposed domain gaps between pavement and heritage masonry —
+            motivating fine-tuning on masonry-specific subsets.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PIPELINE OVERVIEW -->
+    <section class="mb-16">
+      <h2 class="text-3xl text-slate-900 mb-3">Pipeline Overview</h2>
+      <p class="text-slate-500 mb-8">Every uploaded image passes through all three models in parallel.</p>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+        <div class="flex flex-col md:flex-row items-stretch gap-4">
+          <!-- Input -->
+          <div class="flex-shrink-0 bg-slate-50 rounded-xl p-5 flex flex-col items-center text-center min-w-[120px]">
+            <svg class="w-8 h-8 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+            <p class="text-xs font-semibold text-slate-600">Image Input</p>
+            <p class="text-xs text-slate-400 mt-0.5">any masonry photo</p>
+          </div>
+
+          <div class="pipeline-arrow hidden md:flex">→</div>
+
+          <!-- Fork -->
+          <div class="flex-1 flex flex-col gap-3">
+            <!-- Classifier -->
+            <div class="bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 flex items-center gap-4">
+              <span class="text-blue-700 font-bold text-sm w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0">1</span>
+              <div class="flex-1">
+                <p class="font-semibold text-blue-900 text-sm">Classification</p>
+                <p class="text-blue-700 text-xs">EfficientNet-B4 → Cracked / Intact + confidence</p>
+              </div>
+              <span class="text-xs text-blue-500 font-medium">99.8% acc</span>
+            </div>
+            <!-- Detector -->
+            <div class="bg-orange-50 border border-orange-100 rounded-xl px-5 py-4 flex items-center gap-4">
+              <span class="text-orange-700 font-bold text-sm w-6 h-6 bg-orange-200 rounded-full flex items-center justify-center flex-shrink-0">2</span>
+              <div class="flex-1">
+                <p class="font-semibold text-orange-900 text-sm">Detection</p>
+                <p class="text-orange-700 text-xs">YOLOv8s + SAHI → bounding boxes per crack region</p>
+              </div>
+              <span class="text-xs text-orange-500 font-medium">mAP@50 54.4%</span>
+            </div>
+            <!-- Segmentor -->
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4 flex items-center gap-4">
+              <span class="text-emerald-700 font-bold text-sm w-6 h-6 bg-emerald-200 rounded-full flex items-center justify-center flex-shrink-0">3</span>
+              <div class="flex-1">
+                <p class="font-semibold text-emerald-900 text-sm">Segmentation</p>
+                <p class="text-emerald-700 text-xs">U-Net/ResNet34 → pixel-level crack mask + % coverage</p>
+              </div>
+              <span class="text-xs text-emerald-500 font-medium">mIoU 83.6%</span>
+            </div>
+          </div>
+
+          <div class="pipeline-arrow hidden md:flex">→</div>
+
+          <!-- Output -->
+          <div class="flex-shrink-0 bg-slate-800 rounded-xl p-5 flex flex-col items-center text-center min-w-[130px]">
+            <svg class="w-8 h-8 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+            <p class="text-xs font-semibold text-slate-200">Damage Report</p>
+            <p class="text-xs text-slate-400 mt-0.5">severity + visualisations</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODEL DETAILS -->
+    <section class="mb-16">
+      <h2 class="text-3xl text-slate-900 mb-8">How Each Model Works</h2>
+
+      <!-- Classification -->
+      <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">1</span>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Classification — EfficientNet-B4</h3>
+          <span class="ml-auto text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">99.8% accuracy</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">What it does</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              Classifies the entire image as <strong class="text-slate-700">Cracked</strong> or
+              <strong class="text-slate-700">Intact</strong> with a confidence score.
+              Also produces a <strong class="text-slate-700">Grad-CAM heatmap</strong> — a
+              gradient-weighted activation map that highlights which image regions most influenced the decision.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">How it works</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              EfficientNet-B4 is a convolutional neural network scaled by compound coefficient
+              (depth × width × resolution). Pretrained on ImageNet, its final layer is replaced
+              with a 2-class head and fine-tuned on historical crack imagery at 380 × 380 px.
+              Grad-CAM backpropagates the predicted class gradient through the last conv layer
+              to localise discriminative regions without any spatial annotation.
+            </p>
+          </div>
+        </div>
+        <div class="mt-5 bg-blue-50 rounded-xl px-5 py-3 text-sm text-blue-800">
+          <strong>Why EfficientNet-B4?</strong> Better accuracy-to-parameter ratio than ResNet50 or VGG.
+          B4 variant hits the sweet spot for 380 px inputs — large enough for crack texture, small enough for fast inference.
+        </div>
+      </div>
+
+      <!-- Detection -->
+      <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">2</span>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Detection — YOLOv8s + SAHI</h3>
+          <span class="ml-auto text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">mAP@50 54.4%</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">What it does</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              Draws bounding boxes around individual crack regions with confidence scores.
+              Provides spatial localisation — where in the structure damage is concentrated —
+              which classification alone cannot give.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">How it works</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              YOLOv8s (small variant) uses a CSPDarknet backbone with a Feature Pyramid Network
+              for multi-scale detection. SAHI (Slicing Aided Hyper Inference) divides large images
+              into overlapping tiles (adaptive 256–512 px), runs YOLO on each, then merges predictions
+              with NMS. This recovers hairline cracks that would be too small to detect at full resolution.
+              A sensitive fallback lowers the confidence threshold to 0.10 if no cracks are found at 0.25.
+            </p>
+          </div>
+        </div>
+        <div class="mt-5 bg-orange-50 rounded-xl px-5 py-3 text-sm text-orange-800">
+          <strong>Why SAHI?</strong> Cracks are spatially tiny relative to the full image.
+          Downsampling to 640 px destroys hairline detail. SAHI preserves local resolution without retraining.
+        </div>
+      </div>
+
+      <!-- Segmentation -->
+      <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">3</span>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Segmentation — U-Net / ResNet34</h3>
+          <span class="ml-auto text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-semibold">mIoU 83.6%</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">What it does</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              Produces a pixel-level binary mask — every pixel is classified as crack or background.
+              Reports the percentage of the surface that is cracked, giving a quantitative damage extent
+              beyond what bounding boxes can express.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">How it works</h4>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              U-Net is an encoder-decoder with skip connections. The ResNet34 encoder (ImageNet pretrained)
+              extracts hierarchical features; the decoder upsamples them back to input resolution,
+              with skip connections fusing fine-grained spatial detail from early encoder layers.
+              Combined Focal + Tversky loss handles severe class imbalance (cracks occupy &lt;5% of pixels).
+              Input resolution is 384 × 384 px.
+            </p>
+          </div>
+        </div>
+        <div class="mt-5 bg-emerald-50 rounded-xl px-5 py-3 text-sm text-emerald-800">
+          <strong>Why U-Net?</strong> Designed for biomedical segmentation where targets are thin and sparse —
+          exactly the profile of crack pixels in masonry. Skip connections preserve edge sharpness
+          that pure encoder-decoders lose.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-200 py-8 px-6 text-center text-sm text-slate-400">
+    Built for a Master's project in Computer Vision &nbsp;·&nbsp;
+    Models trained on OmniCrack30k, COCO-Crack, MasonryCrack &amp; CrackForest
+  </footer>
+
+</body>
+</html>
