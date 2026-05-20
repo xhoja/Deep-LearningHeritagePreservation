@@ -19,6 +19,13 @@ from PIL import Image
 from torchvision import transforms
 from ultralytics import YOLO
 
+try:
+    from sahi import AutoDetectionModel
+    from sahi.predict import get_sliced_prediction
+    _SAHI_OK = True
+except ImportError:
+    _SAHI_OK = False
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
@@ -104,8 +111,18 @@ def _load_models():
     seg_model.eval().to(DEVICE)
     _models["seg"] = seg_model
 
-    # Detector (YOLO handles device internally)
-    _models["det"] = YOLO(str(DET_CKPT))
+    # Detector — SAHI sliced inference when available, plain YOLO fallback
+    if _SAHI_OK:
+        _models["det"] = AutoDetectionModel.from_pretrained(
+            model_type="ultralytics",
+            model_path=str(DET_CKPT),
+            confidence_threshold=0.25,
+            device=str(DEVICE),
+        )
+        _models["det_sahi"] = True
+    else:
+        _models["det"] = YOLO(str(DET_CKPT))
+        _models["det_sahi"] = False
 
 
 # ---------------------------------------------------------------------------
@@ -146,12 +163,40 @@ def _segment(pil_img: Image.Image) -> Image.Image:
     return Image.fromarray(overlay), crack_pct
 
 
-def _detect(pil_img: Image.Image) -> Image.Image:
+def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
     img_arr = np.array(pil_img.convert("RGB"))
+
+    if _models.get("det_sahi"):
+        w, h = pil_img.size
+        # Use slices ~1/4 image area; full-image pass catches large regions too
+        slice_size = max(256, min(512, min(w, h) // 2))
+        result = get_sliced_prediction(
+            pil_img,
+            _models["det"],
+            slice_height=slice_size,
+            slice_width=slice_size,
+            overlap_height_ratio=0.2,
+            overlap_width_ratio=0.2,
+            perform_standard_pred=True,
+            verbose=0,
+        )
+        annotated = img_arr.copy()
+        for pred in result.object_prediction_list:
+            x1, y1 = int(pred.bbox.minx), int(pred.bbox.miny)
+            x2, y2 = int(pred.bbox.maxx), int(pred.bbox.maxy)
+            conf = pred.score.value
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), CRACK_COLOR, 2)
+            cv2.putText(
+                annotated, f"crack {conf:.2f}",
+                (x1, max(y1 - 5, 12)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, CRACK_COLOR, 1, cv2.LINE_AA,
+            )
+        return Image.fromarray(annotated), len(result.object_prediction_list)
+
+    # Fallback: plain YOLO
     results = _models["det"].predict(img_arr, device=DEVICE, verbose=False, conf=0.25)
-    annotated = results[0].plot(line_width=2)          # BGR numpy array
-    annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-    return Image.fromarray(annotated_rgb), len(results[0].boxes)
+    annotated = cv2.cvtColor(results[0].plot(line_width=2), cv2.COLOR_BGR2RGB)
+    return Image.fromarray(annotated), len(results[0].boxes)
 
 
 # ---------------------------------------------------------------------------

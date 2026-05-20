@@ -233,7 +233,7 @@
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
           <span class="font-semibold text-slate-700">Detection</span>
-          <span class="ml-auto text-xs text-slate-400">YOLOv8s · mAP@50 96.7%</span>
+          <span class="ml-auto text-xs text-slate-400">YOLOv8s · mAP@50 54.4%</span>
         </div>
         <img id="det-img" src="" alt="Detection" class="result-img mb-3"/>
         <p id="det-caption" class="text-sm font-medium text-slate-700"></p>
@@ -629,9 +629,9 @@
       document.getElementById('cls-cam-img').src = 'data:image/jpeg;base64,' + cls.cam_b64;
       setTimeout(() => res.classList.add('in'), 60);
 
-      const clsIsCracked = cls.label === 'Cracked';
+      const clsIsCracked = cls.cracked_pct > 25;
       const detFound     = det.n_boxes > 0 && !det.sensitive;
-      const segFound     = seg.crack_pct > 1.0;
+      const segFound     = seg.crack_pct > 0.3;
       currentSeverity    = getSeverity(clsIsCracked, detFound, segFound, seg.crack_pct);
       renderSeverity(currentSeverity, clsIsCracked, detFound, segFound);
 

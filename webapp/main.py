@@ -24,6 +24,13 @@ from PIL import Image
 from torchvision import transforms
 from ultralytics import YOLO
 
+try:
+    from sahi import AutoDetectionModel
+    from sahi.predict import get_sliced_prediction
+    _SAHI_OK = True
+except ImportError:
+    _SAHI_OK = False
+
 
 # ---------------------------------------------------------------------------
 # Grad-CAM
@@ -138,7 +145,17 @@ def load_models():
         seg_model.eval().to(DEVICE)
         _models["seg"] = seg_model
 
-        _models["det"] = YOLO(str(DET_CKPT))
+        if _SAHI_OK:
+            _models["det"] = AutoDetectionModel.from_pretrained(
+                model_type="ultralytics",
+                model_path=str(DET_CKPT),
+                confidence_threshold=0.25,
+                device=str(DEVICE),
+            )
+            _models["det_sahi"] = True
+        else:
+            _models["det"] = YOLO(str(DET_CKPT))
+            _models["det_sahi"] = False
 
 
 # ---------------------------------------------------------------------------
@@ -195,35 +212,74 @@ def _segment(img: Image.Image) -> dict:
     }
 
 
-def _detect(img: Image.Image) -> dict:
-    arr = np.array(img)
-
-    # First pass: standard threshold
-    results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
-    boxes = results[0].boxes
-    sensitive = False
-
-    # Second pass: lower threshold when classifier would likely flag but detector misses
-    if len(boxes) == 0:
-        results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
-        boxes = results[0].boxes
-        sensitive = True
-
+def _draw_boxes(arr: np.ndarray, preds: list, color: tuple) -> np.ndarray:
     out = arr.copy()
-    color = (255, 140, 0) if not sensitive else (100, 160, 255)
-    for box in boxes:
-        x1, y1, x2, y2 = box.xyxy[0].cpu().int().tolist()
-        conf = float(box.conf[0])
+    for x1, y1, x2, y2, conf in preds:
         cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
         label = f"Crack {conf:.0%}"
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         cv2.rectangle(out, (x1, y1 - th - 8), (x1 + tw + 6, y1), color, -1)
         cv2.putText(out, label, (x1 + 3, y1 - 4),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+    return out
+
+
+def _detect(img: Image.Image) -> dict:
+    arr = np.array(img)
+    sensitive = False
+
+    if _models.get("det_sahi"):
+        w, h = img.size
+        slice_size = max(256, min(512, min(w, h) // 2))
+        result = get_sliced_prediction(
+            img, _models["det"],
+            slice_height=slice_size, slice_width=slice_size,
+            overlap_height_ratio=0.2, overlap_width_ratio=0.2,
+            perform_standard_pred=True,
+            verbose=0,
+        )
+        preds = [
+            (int(p.bbox.minx), int(p.bbox.miny),
+             int(p.bbox.maxx), int(p.bbox.maxy),
+             p.score.value)
+            for p in result.object_prediction_list
+        ]
+        # Sensitive fallback: re-run SAHI at lower threshold if nothing found
+        if not preds:
+            _models["det"].confidence_threshold = 0.10
+            result2 = get_sliced_prediction(
+                img, _models["det"],
+                slice_height=slice_size, slice_width=slice_size,
+                overlap_height_ratio=0.2, overlap_width_ratio=0.2,
+                perform_standard_pred=True,
+                verbose=0,
+            )
+            _models["det"].confidence_threshold = 0.25
+            preds = [
+                (int(p.bbox.minx), int(p.bbox.miny),
+                 int(p.bbox.maxx), int(p.bbox.maxy),
+                 p.score.value)
+                for p in result2.object_prediction_list
+            ]
+            sensitive = True
+    else:
+        results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
+        boxes = results[0].boxes
+        if len(boxes) == 0:
+            results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
+            boxes = results[0].boxes
+            sensitive = True
+        preds = [
+            (*box.xyxy[0].cpu().int().tolist(), float(box.conf[0]))
+            for box in boxes
+        ]
+
+    color = (255, 140, 0) if not sensitive else (100, 160, 255)
+    out = _draw_boxes(arr, preds, color)
 
     return {
         "image_b64": _pil_to_b64(Image.fromarray(out)),
-        "n_boxes":   int(len(boxes)),
+        "n_boxes":   len(preds),
         "sensitive": sensitive,
     }
 
@@ -271,3 +327,8 @@ async def predict(file: UploadFile = File(...)):
         "segmentation":   seg_res,
         "detection":      det_res,
     })
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
