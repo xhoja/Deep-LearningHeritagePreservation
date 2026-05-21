@@ -163,7 +163,7 @@ def load_models():
 # ---------------------------------------------------------------------------
 CLASS_NAMES  = ["Intact", "Cracked"]
 CRACK_COLOR  = (220, 50, 50)
-EXECUTOR     = ThreadPoolExecutor(max_workers=4)
+EXECUTOR     = ThreadPoolExecutor(max_workers=6)
 
 
 def _pil_to_b64(img: Image.Image, fmt: str = "JPEG") -> str:
@@ -383,6 +383,77 @@ async def predict(file: UploadFile = File(...)):
         "segmentation":   seg_res,
         "detection":      det_res,
         "surface":        surf_res,
+    })
+
+
+def _ssim_map(g1: np.ndarray, g2: np.ndarray) -> tuple[float, np.ndarray]:
+    """SSIM score + per-pixel change map (1-SSIM) for two uint8 grayscale images."""
+    C1, C2 = (0.01 * 255) ** 2, (0.03 * 255) ** 2
+    f1, f2 = g1.astype(np.float32), g2.astype(np.float32)
+    k = (cv2.getGaussianKernel(11, 1.5) @ cv2.getGaussianKernel(11, 1.5).T).astype(np.float32)
+    mu1, mu2 = cv2.filter2D(f1, -1, k), cv2.filter2D(f2, -1, k)
+    mu1_sq, mu2_sq, mu12 = mu1**2, mu2**2, mu1*mu2
+    s1  = cv2.filter2D(f1*f1, -1, k) - mu1_sq
+    s2  = cv2.filter2D(f2*f2, -1, k) - mu2_sq
+    s12 = cv2.filter2D(f1*f2, -1, k) - mu12
+    ssim = ((2*mu12 + C1) * (2*s12 + C2)) / ((mu1_sq + mu2_sq + C1) * (s1 + s2 + C2))
+    return float(ssim.mean()), np.clip(1.0 - ssim, 0, 1)
+
+
+@app.post("/compare")
+async def compare_images(before: UploadFile = File(...), after: UploadFile = File(...)):
+    if not before.content_type.startswith("image/") or not after.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Both files must be images")
+
+    img_b = Image.open(io.BytesIO(await before.read())).convert("RGB")
+    img_a = Image.open(io.BytesIO(await after.read())).convert("RGB")
+
+    load_models()
+
+    # Align to common size for SSIM
+    W = min(img_b.width,  img_a.width,  512)
+    H = min(img_b.height, img_a.height, 512)
+    ib = img_b.resize((W, H), Image.LANCZOS)
+    ia = img_a.resize((W, H), Image.LANCZOS)
+
+    gray_b = cv2.cvtColor(np.array(ib), cv2.COLOR_RGB2GRAY)
+    gray_a = cv2.cvtColor(np.array(ia), cv2.COLOR_RGB2GRAY)
+    ssim_score, change_raw = _ssim_map(gray_b, gray_a)
+
+    # Colorise change map
+    change_norm = (change_raw - change_raw.min()) / (change_raw.max() - change_raw.min() + 1e-8)
+    change_vis  = cv2.cvtColor(
+        cv2.applyColorMap((change_norm * 255).astype(np.uint8), cv2.COLORMAP_INFERNO),
+        cv2.COLOR_BGR2RGB)
+    change_b64 = _pil_to_b64(Image.fromarray(change_vis))
+
+    # Run models on both images concurrently
+    fut_seg_b  = EXECUTOR.submit(_segment,          img_b)
+    fut_seg_a  = EXECUTOR.submit(_segment,          img_a)
+    fut_surf_b = EXECUTOR.submit(_surface_analysis, img_b)
+    fut_surf_a = EXECUTOR.submit(_surface_analysis, img_a)
+    fut_cls_a  = EXECUTOR.submit(_classify,         img_a)
+
+    seg_b, seg_a   = fut_seg_b.result(), fut_seg_a.result()
+    surf_b, surf_a = fut_surf_b.result(), fut_surf_a.result()
+    cls_a          = fut_cls_a.result()
+
+    return JSONResponse({
+        "change_map_b64": change_b64,
+        "ssim_score":     round(ssim_score, 3),
+        "ssim_change":    round(1.0 - ssim_score, 3),
+        "before": {
+            "crack_pct":     seg_b["crack_pct"],
+            "seg_b64":       seg_b["image_b64"],
+            "texture_score": surf_b["texture_score"],
+        },
+        "after": {
+            "crack_pct":     seg_a["crack_pct"],
+            "seg_b64":       seg_a["image_b64"],
+            "texture_score": surf_a["texture_score"],
+            "label":         cls_a["label"],
+            "cam_b64":       cls_a["cam_b64"],
+        },
     })
 
 
