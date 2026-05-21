@@ -110,7 +110,8 @@ heritage-damage-assessment/
 │   ├── 05_detector_finetuning.ipynb   # Domain adaptation: fine-tune detector on heritage data
 │   ├── 06_failure_analysis.ipynb      # Failure analysis & Grad-CAM++ across all three models
 │   ├── 07_sahi_evaluation.ipynb       # SAHI sliced inference vs plain YOLO comparison
-│   └── 08_classifier_finetuning.ipynb # Classifier domain adaptation on heritage masonry data
+│   ├── 08_classifier_finetuning.ipynb # Classifier domain adaptation on heritage masonry data
+│   └── 09_degradation_analysis.ipynb  # Synthetic temporal degradation + classical filter bank analysis
 │
 ├── samples/                       # Testing samples for validation (required deliverable)
 │   ├── images/                    # Sample input images
@@ -454,6 +455,48 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 
 ---
 
+### Task 9 — Synthetic Temporal Degradation Analysis (`notebooks/09_degradation_analysis.ipynb`)
+
+**Motivation:** No public dataset of aligned, multi-decade facade photos of the same heritage building exists. This notebook addresses the gap with a physically-motivated synthetic degradation pipeline, then characterises how classical signal-processing filters respond as damage accumulates.
+
+**Degradation stages:**
+
+| Stage | Label | Simulated phenomena |
+|-------|-------|---------------------|
+| 0 | Intact | Original image — baseline |
+| 1 | Early (~10 yr) | Colour yellowing (HSV shift), film grain |
+| 2 | Moderate (~30 yr) | Thin crack overlay (real mask, eroded), biological growth patches, deeper staining |
+| 3 | Severe (~60 yr) | Thick cracks (dilated mask), heavy discolouration, surface erosion blend, efflorescence deposits |
+
+Crack textures drawn from Masonry + CrackForest ground-truth masks, ensuring morphological realism.
+
+**Filter bank results:**
+
+| Method | Key finding |
+|--------|-------------|
+| **Gabor filter bank** (6θ × 3f) | Response peaks at Stage 2 (thin cracks), drops slightly at Stage 3 — erosion blur smooths oriented edges; Gabor captures *crack structure*, not just general damage |
+| **Laplacian-of-Gaussian** (σ=1,2,4) | Multi-scale edge complexity increases monotonically |
+| **Local entropy** (disk r=5) | Surface disorder proxy; dips at Stage 1 (colour shift softens texture), rises at Stages 2–3 |
+| **GLCM contrast** | Most reliable monotonic indicator; 0.491 → 0.572 → 1.427 → 2.213 across stages |
+| **HSV histograms** | Clear saturation decrease and value darkening confirm simulation realism |
+
+**SSIM change detection:** SSIM drops 0.679 from Stage 0→3 (1.000 → 0.844 → 0.483 → 0.321), with spatially explicit change maps showing crack and staining regions.
+
+**Composite degradation score:**
+
+| Stage | Score | P(cracked) EfficientNet-B4 |
+|-------|-------|---------------------------|
+| 0 Intact | 0.001 | 0.003 |
+| 1 Early | 0.088 | 0.007 |
+| 2 Moderate | 0.723 | 0.780 |
+| 3 Severe | 0.780 | 0.746 |
+
+Score = 0.25·(1−SSIM) + 0.25·ΔGabor + 0.25·Δentropy + 0.25·GLCM\_contrast, using delta-from-baseline normalisation to enforce Stage 0 as floor. Pearson r = **0.843** between degradation score and classifier P(cracked) — strong correlation despite classifier never trained on synthetically degraded images.
+
+**Runtime:** CPU-only, ~8–10 min on T4 Colab.
+
+---
+
 ## Web Application
 
 FastAPI demo in `webapp/`. Upload masonry images and get a full three-model damage report in the browser.
@@ -526,6 +569,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
 - [x] Task 7: SAHI sliced inference evaluation — plain YOLO 28.0% vs SAHI 18.9% (SAHI underperforms on this domain)
 - [x] Task 1b: Classifier domain adaptation — heritage cracked recall 71.2% → 98.1% after fine-tuning on masonry+crackforest
+- [x] Task 9: Synthetic temporal degradation analysis — Gabor/LoG/entropy/GLCM filter bank, SSIM change maps, degradation score, DL classifier validation (Pearson r=0.843)
 - [x] Populate `samples/` with validation images (saved via notebook 06)
 - [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, JSON export
 - [ ] Write project report (`report/report.pdf`)

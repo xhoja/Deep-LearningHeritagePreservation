@@ -163,7 +163,7 @@ def load_models():
 # ---------------------------------------------------------------------------
 CLASS_NAMES  = ["Intact", "Cracked"]
 CRACK_COLOR  = (220, 50, 50)
-EXECUTOR     = ThreadPoolExecutor(max_workers=3)
+EXECUTOR     = ThreadPoolExecutor(max_workers=4)
 
 
 def _pil_to_b64(img: Image.Image, fmt: str = "JPEG") -> str:
@@ -284,6 +284,55 @@ def _detect(img: Image.Image) -> dict:
     }
 
 
+def _surface_analysis(img: Image.Image) -> dict:
+    arr     = np.array(img)
+    orig_w, orig_h = img.size
+
+    small = cv2.resize(arr, (256, 256))
+    gray  = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
+
+    # Gabor energy: 6 orientations × 3 wavelengths (matches nb09 filter bank)
+    gabor_map = np.zeros((256, 256), dtype=np.float32)
+    for ti in range(6):
+        theta = ti * np.pi / 6
+        for lam in (8, 12, 20):
+            kern = cv2.getGaborKernel((21, 21), sigma=4.0, theta=theta,
+                                       lambd=float(lam), gamma=0.5, psi=0,
+                                       ktype=cv2.CV_32F)
+            gabor_map = np.maximum(gabor_map,
+                                   np.abs(cv2.filter2D(gray, cv2.CV_32F, kern)))
+    gabor_norm = (gabor_map - gabor_map.min()) / (gabor_map.max() - gabor_map.min() + 1e-8)
+
+    # Local complexity via sliding-window Laplacian std (proxy for entropy)
+    blurred   = cv2.GaussianBlur(gray, (9, 9), 2.0)
+    lap       = cv2.Laplacian(blurred, cv2.CV_32F)
+    lap_abs   = np.abs(lap)
+    k         = 11
+    mean_sq   = cv2.boxFilter(lap_abs ** 2, -1, (k, k))
+    mean_     = cv2.boxFilter(lap_abs,      -1, (k, k))
+    local_std = np.sqrt(np.maximum(mean_sq - mean_ ** 2, 0))
+    comp_norm = (local_std - local_std.min()) / (local_std.max() - local_std.min() + 1e-8)
+
+    # Texture score: Laplacian variance + mean Gabor energy, each normalised by
+    # empirical calibration from nb09 degraded heritage images
+    lap_var    = float(np.var(lap))
+    gabor_mean = float(gabor_map.mean())
+    lap_s  = float(np.clip(lap_var   / 0.015, 0, 1))
+    gab_s  = float(np.clip(gabor_mean / 0.06,  0, 1))
+    score  = round((0.5 * lap_s + 0.5 * gab_s) * 100, 1)
+
+    def _heatmap_b64(norm_map: np.ndarray) -> str:
+        h = cv2.applyColorMap((norm_map * 255).astype(np.uint8), cv2.COLORMAP_INFERNO)
+        h = cv2.cvtColor(cv2.resize(h, (orig_w, orig_h)), cv2.COLOR_BGR2RGB)
+        return _pil_to_b64(Image.fromarray(h))
+
+    return {
+        "gabor_b64":     _heatmap_b64(gabor_norm),
+        "entropy_b64":   _heatmap_b64(comp_norm),
+        "texture_score": score,
+    }
+
+
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
@@ -318,19 +367,22 @@ async def predict(file: UploadFile = File(...)):
 
     load_models()
 
-    # Run all 3 models concurrently
-    fut_cls = EXECUTOR.submit(_classify, img)
-    fut_seg = EXECUTOR.submit(_segment, img)
-    fut_det = EXECUTOR.submit(_detect,  img)
+    # Run all 4 tasks concurrently
+    fut_cls  = EXECUTOR.submit(_classify,        img)
+    fut_seg  = EXECUTOR.submit(_segment,         img)
+    fut_det  = EXECUTOR.submit(_detect,          img)
+    fut_surf = EXECUTOR.submit(_surface_analysis, img)
 
-    cls_res = fut_cls.result()
-    seg_res = fut_seg.result()
-    det_res = fut_det.result()
+    cls_res  = fut_cls.result()
+    seg_res  = fut_seg.result()
+    det_res  = fut_det.result()
+    surf_res = fut_surf.result()
 
     return JSONResponse({
         "classification": cls_res,
         "segmentation":   seg_res,
         "detection":      det_res,
+        "surface":        surf_res,
     })
 
 

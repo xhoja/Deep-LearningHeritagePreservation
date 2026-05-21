@@ -224,8 +224,19 @@
           </div>
           <span class="step-label text-sm">Segmenting pixel mask</span>
         </div>
+        <div id="step-surface" class="step-item flex items-center gap-3">
+          <div class="step-icon">
+            <span class="step-num text-xs text-slate-400 font-semibold">4</span>
+            <div class="step-spinner hidden absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent"
+                 style="animation: spin .7s linear infinite;"></div>
+            <svg class="step-check hidden w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <span class="step-label text-sm">Analysing surface texture</span>
+        </div>
       </div>
-      <p class="text-slate-400 text-xs">Running in parallel — ~10s on CPU</p>
+      <p class="text-slate-400 text-xs">Running in parallel — ~12s on CPU</p>
     </div>
 
     <!-- ── DETECTION + SEGMENTATION ───────────────────────────────────────── -->
@@ -269,6 +280,40 @@
           <div>
             <p id="seg-caption" class="text-sm font-semibold text-slate-700">—</p>
             <p class="text-xs text-slate-400 mt-0.5">of image area</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SURFACE TEXTURE ANALYSIS ─────────────────────────────────────────── -->
+    <div id="surface-results" class="hidden mb-6 fade-up">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="font-semibold text-slate-700">Surface Texture Analysis</span>
+          <span class="ml-auto text-xs text-slate-400">Gabor filter bank · Local complexity · method from nb09</span>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Gabor Edge Energy</p>
+            <img id="gabor-img" src="" alt="Gabor energy heatmap" class="result-img"/>
+            <p class="text-xs text-slate-400 mt-1.5">6 orientations × 3 wavelengths — highlights crack-like edges (bright = high energy)</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Local Complexity Map</p>
+            <img id="entropy-img" src="" alt="Complexity heatmap" class="result-img"/>
+            <p class="text-xs text-slate-400 mt-1.5">Sliding-window Laplacian std — bright regions have irregular/complex texture</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-slate-50 rounded-xl px-4 py-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-700 mb-0.5">Surface Complexity Score</p>
+            <p id="texture-label" class="text-xs text-slate-500 leading-snug"></p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span id="texture-score-val" class="text-3xl font-bold tabular-nums text-slate-800"></span>
+            <span class="text-sm text-slate-400 ml-0.5">/ 100</span>
           </div>
         </div>
       </div>
@@ -525,7 +570,7 @@
     function showLoading() {
       stepTimers.forEach(clearTimeout);
       stepTimers = [];
-      ['step-classify','step-detect','step-segment'].forEach(id => setStepState(id, 'pending'));
+      ['step-classify','step-detect','step-segment','step-surface'].forEach(id => setStepState(id, 'pending'));
       document.getElementById('loading').classList.replace('hidden', 'flex');
       setStepState('step-classify', 'active');
       stepTimers.push(setTimeout(() => {
@@ -536,6 +581,10 @@
         setStepState('step-detect', 'done');
         setStepState('step-segment', 'active');
       }, 5000));
+      stepTimers.push(setTimeout(() => {
+        setStepState('step-segment', 'done');
+        setStepState('step-surface', 'active');
+      }, 7500));
     }
 
     function hideLoading(isError) {
@@ -546,7 +595,8 @@
       return new Promise(resolve => {
         setStepState('step-classify', 'done');
         setStepState('step-detect',   'done');
-        setTimeout(() => setStepState('step-segment', 'done'), 160);
+        setStepState('step-segment',  'done');
+        setTimeout(() => setStepState('step-surface', 'done'), 160);
         setTimeout(() => { el.classList.replace('flex', 'hidden'); resolve(); }, 750);
       });
     }
@@ -615,10 +665,19 @@
       document.getElementById('gauge-text').textContent = pct.toFixed(1) + '%';
     }
 
+    // ── Texture score label ────────────────────────────────────────────────
+    function textureLabel(score) {
+      if (score < 20) return 'Low complexity — surface appears uniform and intact';
+      if (score < 40) return 'Mild irregularity — subtle edge patterns present';
+      if (score < 60) return 'Moderate complexity — possible early-stage degradation';
+      if (score < 80) return 'High complexity — significant surface texture variation';
+      return 'Very high complexity — consistent with heavily degraded masonry';
+    }
+
     // ── Render results ─────────────────────────────────────────────────────
     function renderResults(data) {
       lastResults = data;
-      const { classification: cls, detection: det, segmentation: seg } = data;
+      const { classification: cls, detection: det, segmentation: seg, surface: surf } = data;
 
       document.getElementById('cls-empty').classList.add('hidden');
       const res = document.getElementById('cls-result');
@@ -653,19 +712,34 @@
           setTimeout(() => el.classList.add('in'), i * 150));
       }, 80);
 
+      // Surface analysis
+      if (surf) {
+        document.getElementById('gabor-img').src   = 'data:image/jpeg;base64,' + surf.gabor_b64;
+        document.getElementById('entropy-img').src  = 'data:image/jpeg;base64,' + surf.entropy_b64;
+        document.getElementById('texture-score-val').textContent = surf.texture_score;
+        document.getElementById('texture-label').textContent     = textureLabel(surf.texture_score);
+        const surfEl = document.getElementById('surface-results');
+        surfEl.classList.remove('hidden');
+        setTimeout(() => surfEl.classList.add('in'), 200);
+      }
+
       document.getElementById('download-row').classList.remove('hidden');
     }
 
     // ── Download ───────────────────────────────────────────────────────────
     function downloadReport() {
       if (!lastResults) return;
-      const { classification: cls, detection: det, segmentation: seg } = lastResults;
+      const { classification: cls, detection: det, segmentation: seg, surface: surf } = lastResults;
       const report = {
         timestamp: new Date().toISOString(),
         severity: currentSeverity,
         classification: { label: cls.label, cracked_probability_pct: +cls.cracked_pct.toFixed(2) },
         detection:       { crack_regions_found: det.n_boxes, sensitive_mode: det.sensitive || false },
         segmentation:    { crack_coverage_pct: +seg.crack_pct.toFixed(2) },
+        surface_texture: surf ? {
+          texture_score: surf.texture_score,
+          label: textureLabel(surf.texture_score),
+        } : null,
       };
       const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
       const url  = URL.createObjectURL(blob);
@@ -695,6 +769,10 @@
       vis.classList.add('hidden');
       vis.classList.remove('grid');
       vis.querySelectorAll('.fade-up').forEach(el => el.classList.remove('in'));
+
+      const surf = document.getElementById('surface-results');
+      surf.classList.add('hidden');
+      surf.classList.remove('in');
     }
   </script>
 </body>
