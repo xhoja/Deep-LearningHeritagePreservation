@@ -116,14 +116,24 @@
         <!-- Examples -->
         <div class="mt-4">
           <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-2">Examples</p>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <img src="/examples/cracked_1.jpg" onclick="loadExample(this.src)" alt="Cracked"
+                 title="Cracked surface"
                  class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
             <img src="/examples/cracked_2.jpg" onclick="loadExample(this.src)" alt="Cracked"
+                 title="Cracked surface"
                  class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
             <img src="/examples/intact_1.jpg"  onclick="loadExample(this.src)" alt="Intact"
+                 title="Intact surface"
                  class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-blue-500 transition-all"/>
+            <img src="/examples/deg_s0_r0.jpg" onclick="loadExample(this.src)" alt="Stage 0 — Intact"
+                 title="Degradation Stage 0 — Intact"
+                 class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-emerald-500 transition-all"/>
+            <img src="/examples/deg_s3_r0.jpg" onclick="loadExample(this.src)" alt="Stage 3 — Severe"
+                 title="Degradation Stage 3 — Severe"
+                 class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-red-500 transition-all"/>
           </div>
+          <p class="text-xs text-slate-300 mt-1.5">Last 2: synthetic degradation stages (nb09)</p>
         </div>
 
         <button id="analyse-btn" onclick="analyseAll()" disabled
