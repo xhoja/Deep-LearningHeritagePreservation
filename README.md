@@ -107,7 +107,10 @@ heritage-damage-assessment/
 │   ├── 02_detection.ipynb             # YOLOv8s detection (with outputs)
 │   ├── 03_segmentation.ipynb          # U-Net + ResNet34 segmentation (with outputs)
 │   ├── 04_cross_dataset_eval.ipynb    # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
-│   └── 05_detector_finetuning.ipynb   # Domain adaptation: fine-tune detector on heritage data
+│   ├── 05_detector_finetuning.ipynb   # Domain adaptation: fine-tune detector on heritage data
+│   ├── 06_failure_analysis.ipynb      # Failure analysis & Grad-CAM++ across all three models
+│   ├── 07_sahi_evaluation.ipynb       # SAHI sliced inference vs plain YOLO comparison
+│   └── 08_classifier_finetuning.ipynb # Classifier domain adaptation on heritage masonry data
 │
 ├── samples/                       # Testing samples for validation (required deliverable)
 │   ├── images/                    # Sample input images
@@ -231,8 +234,10 @@ python infer.py \
 | Task | Metrics | SotA Target | Result |
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
+| Classification (fine-tuned, heritage domain) | Accuracy, F1 | — | **99.4% combined / 98.1% heritage recall** |
 | Detection (OmniCrack30k) | mAP@50 | >70% | val **96.7% ✓** / test 34.6% |
-| Detection (fine-tuned, heritage) | mAP@50 | — | **54.4% combined / 64.1% CrackForest** |
+| Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
+| Detection (SAHI sliced inference) | mAP@50 | — | Plain YOLO **28.0%** / SAHI **18.9%** (SAHI underperforms) |
 | Segmentation | mIoU, Dice | mIoU > 80% | **mIoU 83.56% ✓ / Dice 81.26%** |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
@@ -326,18 +331,18 @@ Model generalises better to masonry (wider cracks, stronger contrast) than Crack
 
 | Test subset | Before (OmniCrack weights) | After (fine-tuned) | Δ |
 |---|---|---|---|
-| Combined heritage test (n=54) | 12.7% | **54.4%** | +328% |
-| CrackForest (n=18) | 29.2% | **64.1%** | +120% |
-| Masonry (n=36) | 3.9% | **51.8%** | +1 230% |
+| Combined heritage test (n=54) | 8.8% | **23.6%** | +169% |
+| CrackForest (n=18) | 18.1% | **28.4%** | +57% |
+| Masonry (n=36) | 4.7% | **23.1%** | +394% |
 
 **Key findings:**
 
-1. **Masonry recovered entirely from near-zero** — 3.9% → 51.8% with only 168 masonry training images, demonstrating that ImageNet + OmniCrack pretraining provides sufficient low-level crack features; the domain gap was purely in higher-level appearance priors.
-2. **Backbone freezing critical** — freezing the first 10 layers prevented catastrophic forgetting of OmniCrack crack-detection features while allowing the head to adapt to heritage crack morphology.
-3. **Data efficiency** — 250 training images was sufficient for strong adaptation; no additional data collection required.
-4. **Precision/Recall after fine-tuning:** P=0.607, R=0.544 (combined); P=0.729, R=0.583 (CrackForest).
+1. **Masonry improvement largest** — 4.7% → 23.1% (+394% relative) with only 168 masonry training images, confirming that OmniCrack pretraining provides transferable crack features but heritage domain gap is significant.
+2. **Backbone freezing critical** — freezing the first 10 backbone layers prevented catastrophic forgetting of OmniCrack crack-detection features while allowing the head to adapt to heritage crack morphology.
+3. **Domain gap is hard to bridge with small data** — 250 images and 50 epochs yield modest absolute mAP. Heritage cracks are thinner, more irregular, and at different scales than OmniCrack30k pavement cracks; the bounding-box label quality from mask contours also introduces noise.
+4. **Precision/Recall after fine-tuning:** P=0.281, R=0.341 (combined); P=0.320, R=0.289 (CrackForest).
 
-**Report narrative:** Domain adaptation via fine-tuning on 250 heritage crack images recovers 54% mAP@50 from a near-zero baseline — a 328% relative improvement — demonstrating that large-scale crack detectors can be efficiently adapted to heritage preservation contexts with minimal labelled data. This directly addresses the project's central research question on cross-dataset generalisation.
+**Report narrative:** Domain adaptation via fine-tuning on 250 heritage crack images improves mAP@50 from 8.8% to 23.6% on the combined heritage test set — a 169% relative improvement — demonstrating that adaptation is possible but difficult, highlighting the severity of the OmniCrack→heritage domain gap. This directly addresses the project's central research question on cross-dataset generalisation.
 
 ---
 
@@ -414,6 +419,41 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 
 ---
 
+### Task 7 — SAHI Sliced Inference Evaluation (`notebooks/07_sahi_evaluation.ipynb`)
+
+**Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
+
+**Setup:** Same fine-tuned YOLOv8s checkpoint from Task 5. Adaptive slice size 256–512 px, 20% overlap, conf=0.25.
+
+| Method | mAP@50 | Boxes predicted |
+|---|---|---|
+| Plain YOLOv8s (imgsz=640) | **28.0%** | Normal |
+| YOLOv8s + SAHI (adaptive 256–512 tiles) | **18.9%** | 32 across 54 images |
+| Delta | **−9.2 pp** | — |
+
+**Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
+
+---
+
+### Task 1b — Classifier Domain Adaptation (`notebooks/08_classifier_finetuning.ipynb`)
+
+**Problem:** EfficientNet-B4 (trained on HistoricalCrack) achieves 99.83% on its own test split but only 71.2% cracked recall on heritage masonry images, where GradCAM shows attention on irrelevant background regions.
+
+**Approach:** Fine-tuned from the existing checkpoint on a combined dataset (masonry + crackforest + historical_crack). Froze backbone features[0:4], trained features[5:] + classifier head. LR=1e-4, 20 epochs, cosine schedule, label smoothing=0.1.
+
+| | historical_crack test | Heritage domain (masonry+crackforest) |
+|--|--|--|
+| Before fine-tuning | 99.83% | **71.2%** cracked recall |
+| After fine-tuning | **99.4%** (combined test) | **98.1%** cracked recall |
+
+**Key findings:**
+
+1. **Heritage recall jumps +26.9 pp** — 71.2% → 98.1% on the masonry+crackforest subset, confirming the domain gap was in higher-level appearance priors learnable from 250 images.
+2. **In-distribution performance preserved** — combined test acc 95.2% → 99.4%, historical_crack performance essentially unchanged.
+3. **GradCAM attention shifts** — post fine-tuning, the model attends to crack edges and branching structures in masonry images rather than irrelevant background textures.
+
+---
+
 ## Web Application
 
 FastAPI demo in `webapp/`. Upload masonry images and get a full three-model damage report in the browser.
@@ -482,8 +522,10 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Task 2: Detection — YOLOv8s, val mAP@50=96.7%, test mAP@50=34.6% (cross-domain gap)
 - [x] Task 3: Segmentation — U-Net + ResNet34, mIoU=83.56%, Dice=81.26% (2-class, >80% ✓)
 - [x] Task 4: Cross-dataset evaluation — Grad-CAM, t-SNE feature space, performance heatmap
-- [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, 4.8% → 64.1% mAP@50
+- [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, combined 8.8% → 23.6% mAP@50 (+169%)
 - [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
+- [x] Task 7: SAHI sliced inference evaluation — plain YOLO 28.0% vs SAHI 18.9% (SAHI underperforms on this domain)
+- [x] Task 1b: Classifier domain adaptation — heritage cracked recall 71.2% → 98.1% after fine-tuning on masonry+crackforest
 - [x] Populate `samples/` with validation images (saved via notebook 06)
 - [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, JSON export
 - [ ] Write project report (`report/report.pdf`)
