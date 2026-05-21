@@ -161,15 +161,40 @@
         </div>
 
         <div id="cls-result" class="hidden fade-up">
-          <div class="flex items-baseline gap-4 mb-4">
+          <div class="flex items-baseline gap-4 mb-3">
             <div id="cls-label" class="text-4xl font-bold"></div>
             <div class="text-right ml-auto">
               <div class="text-xs text-slate-400 mb-0.5">Cracked</div>
               <span id="cls-cracked-pct" class="font-bold text-slate-800 text-lg"></span>
             </div>
           </div>
-          <img id="cls-cam-img" src="" alt="Grad-CAM" class="result-img mb-3"/>
-          <p class="text-xs text-slate-400">Grad-CAM: red regions drove the classification decision</p>
+
+          <!-- View switcher tabs -->
+          <div class="flex gap-1 mb-2 bg-slate-100 rounded-lg p-1">
+            <button id="tab-cam"     onclick="switchView('cam')"
+                    class="flex-1 text-xs font-semibold py-1.5 rounded-md bg-white shadow-sm text-slate-700 transition-all">
+              Grad-CAM
+            </button>
+            <button id="tab-gabor"   onclick="switchView('gabor')"
+                    class="flex-1 text-xs font-semibold py-1.5 rounded-md text-slate-400 hover:text-slate-600 transition-all">
+              Gabor Energy
+            </button>
+            <button id="tab-entropy" onclick="switchView('entropy')"
+                    class="flex-1 text-xs font-semibold py-1.5 rounded-md text-slate-400 hover:text-slate-600 transition-all">
+              Complexity
+            </button>
+          </div>
+
+          <img id="view-img" src="" alt="Heatmap view" class="result-img mb-2"/>
+
+          <div class="flex items-center justify-between gap-2">
+            <p id="view-caption" class="text-xs text-slate-400 leading-snug flex-1"></p>
+            <div id="texture-badge" class="hidden flex-shrink-0 flex items-center gap-1 bg-slate-100 rounded-lg px-2.5 py-1">
+              <span class="text-xs text-slate-500">Complexity</span>
+              <span id="texture-score-val" class="text-sm font-bold text-slate-800 tabular-nums"></span>
+              <span class="text-xs text-slate-400">/100</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -295,40 +320,6 @@
       </div>
     </div>
 
-    <!-- ── SURFACE TEXTURE ANALYSIS ─────────────────────────────────────────── -->
-    <div id="surface-results" class="hidden mb-6 fade-up">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <span class="font-semibold text-slate-700">Surface Texture Analysis</span>
-          <span class="ml-auto text-xs text-slate-400">Gabor filter bank · Local complexity · method from nb09</span>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Gabor Edge Energy</p>
-            <img id="gabor-img" src="" alt="Gabor energy heatmap" class="result-img"/>
-            <p class="text-xs text-slate-400 mt-1.5">6 orientations × 3 wavelengths — highlights crack-like edges (bright = high energy)</p>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Local Complexity Map</p>
-            <img id="entropy-img" src="" alt="Complexity heatmap" class="result-img"/>
-            <p class="text-xs text-slate-400 mt-1.5">Sliding-window Laplacian std — bright regions have irregular/complex texture</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-4 bg-slate-50 rounded-xl px-4 py-3">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-700 mb-0.5">Surface Complexity Score</p>
-            <p id="texture-label" class="text-xs text-slate-500 leading-snug"></p>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <span id="texture-score-val" class="text-3xl font-bold tabular-nums text-slate-800"></span>
-            <span class="text-sm text-slate-400 ml-0.5">/ 100</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ── DOWNLOAD ROW ────────────────────────────────────────────────────── -->
     <div id="download-row" class="hidden mb-6 flex justify-end">
       <button onclick="downloadReport()"
@@ -358,6 +349,30 @@
     let lastResults  = null;
     let currentSeverity = 'NONE';
     let stepTimers   = [];
+    let currentView  = 'cam';   // 'cam' | 'gabor' | 'entropy'
+    let viewImgs     = {};      // { cam, gabor, entropy } base64 srcs
+    const VIEW_META  = {
+      cam:     { caption: 'Grad-CAM: red regions drove the classification decision' },
+      gabor:   { caption: 'Gabor energy — 6 orientations × 3 wavelengths, highlights crack-like edges' },
+      entropy: { caption: 'Complexity map — local Laplacian std, bright = irregular surface texture' },
+    };
+
+    // ── View switcher ──────────────────────────────────────────────────────
+    function switchView(view) {
+      if (!viewImgs[view]) return;
+      currentView = view;
+      document.getElementById('view-img').src = viewImgs[view];
+      document.getElementById('view-caption').textContent = VIEW_META[view].caption;
+      ['cam','gabor','entropy'].forEach(v => {
+        const btn = document.getElementById('tab-' + v);
+        const active = v === view;
+        btn.className = 'flex-1 text-xs font-semibold py-1.5 rounded-md transition-all '
+          + (active ? 'bg-white shadow-sm text-slate-700' : 'text-slate-400 hover:text-slate-600');
+      });
+      const badge = document.getElementById('texture-badge');
+      if (view !== 'cam' && viewImgs.gabor) badge.classList.remove('hidden');
+      else badge.classList.add('hidden');
+    }
 
     // ── File input ─────────────────────────────────────────────────────────
     function onDragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
@@ -696,7 +711,20 @@
       lbl.textContent = cls.label;
       lbl.className   = 'text-4xl font-bold ' + (cls.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
       document.getElementById('cls-cracked-pct').textContent = cls.cracked_pct.toFixed(1) + '%';
-      document.getElementById('cls-cam-img').src = 'data:image/jpeg;base64,' + cls.cam_b64;
+
+      // Populate all view slots
+      viewImgs.cam = 'data:image/jpeg;base64,' + cls.cam_b64;
+      if (surf) {
+        viewImgs.gabor   = 'data:image/jpeg;base64,' + surf.gabor_b64;
+        viewImgs.entropy = 'data:image/jpeg;base64,' + surf.entropy_b64;
+        document.getElementById('texture-score-val').textContent = surf.texture_score;
+      }
+      // Enable/disable tabs
+      ['gabor','entropy'].forEach(v => {
+        document.getElementById('tab-' + v).disabled = !surf;
+        if (!surf) document.getElementById('tab-' + v).classList.add('opacity-40', 'cursor-not-allowed');
+      });
+      switchView('cam');
       setTimeout(() => res.classList.add('in'), 60);
 
       const clsIsCracked = cls.cracked_pct > 25;
@@ -721,17 +749,6 @@
         vis.querySelectorAll('.fade-up').forEach((el, i) =>
           setTimeout(() => el.classList.add('in'), i * 150));
       }, 80);
-
-      // Surface analysis
-      if (surf) {
-        document.getElementById('gabor-img').src   = 'data:image/jpeg;base64,' + surf.gabor_b64;
-        document.getElementById('entropy-img').src  = 'data:image/jpeg;base64,' + surf.entropy_b64;
-        document.getElementById('texture-score-val').textContent = surf.texture_score;
-        document.getElementById('texture-label').textContent     = textureLabel(surf.texture_score);
-        const surfEl = document.getElementById('surface-results');
-        surfEl.classList.remove('hidden');
-        setTimeout(() => surfEl.classList.add('in'), 200);
-      }
 
       document.getElementById('download-row').classList.remove('hidden');
     }
@@ -780,9 +797,18 @@
       vis.classList.remove('grid');
       vis.querySelectorAll('.fade-up').forEach(el => el.classList.remove('in'));
 
-      const surf = document.getElementById('surface-results');
-      surf.classList.add('hidden');
-      surf.classList.remove('in');
+      // Reset view switcher
+      viewImgs    = {};
+      currentView = 'cam';
+      document.getElementById('view-img').src = '';
+      document.getElementById('view-caption').textContent = '';
+      document.getElementById('texture-badge').classList.add('hidden');
+      ['gabor','entropy'].forEach(v => {
+        const btn = document.getElementById('tab-' + v);
+        btn.disabled = false;
+        btn.classList.remove('opacity-40', 'cursor-not-allowed');
+      });
+      switchView('cam');
     }
   </script>
 </body>
