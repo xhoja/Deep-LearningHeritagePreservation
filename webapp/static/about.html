@@ -76,7 +76,8 @@
             <em>Is this structure damaged?</em> (classification),
             <em>Where are the cracks?</em> (detection), and
             <em>What fraction is damaged?</em> (segmentation).
-            Together they provide actionable triage without specialist access.
+            A degradation analysis layer adds surface texture profiling and before/after change detection,
+            enabling longitudinal monitoring across visits.
           </p>
         </div>
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
@@ -117,7 +118,7 @@
     <!-- PIPELINE OVERVIEW -->
     <section class="mb-16">
       <h2 class="text-3xl text-slate-900 mb-3">Pipeline Overview</h2>
-      <p class="text-slate-500 mb-8">Every uploaded image passes through all three models in parallel.</p>
+      <p class="text-slate-500 mb-8">Every uploaded image passes through all three models in parallel. In Compare mode, both images are analysed independently and an SSIM change map is computed between them.</p>
 
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
         <div class="flex flex-col md:flex-row items-stretch gap-4">
@@ -175,6 +176,88 @@
             <p class="text-xs font-semibold text-slate-200">Damage Report</p>
             <p class="text-xs text-slate-400 mt-0.5">severity + visualisations</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEGRADATION ANALYSIS -->
+    <section class="mb-16">
+      <h2 class="text-3xl text-slate-900 mb-3">Degradation Analysis</h2>
+      <p class="text-slate-500 mb-8">Beyond single-image damage detection, the tool offers two degradation-focused analysis modes derived from notebook 09.</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <!-- Surface Texture -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800" style="font-family:Inter,sans-serif">Surface Texture Analysis</h3>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-4">
+            Analyses surface micro-structure without requiring crack labels. Produces two complementary filter-bank maps:
+          </p>
+          <ul class="space-y-2 mb-4">
+            <li class="flex gap-2 text-sm">
+              <span class="w-2 h-2 rounded-full bg-violet-400 mt-1.5 flex-shrink-0"></span>
+              <span class="text-slate-600"><strong class="text-slate-800">Gabor Energy</strong> — 6 orientations × 3 wavelengths. Responds strongly to crack-like elongated edges at any angle.</span>
+            </li>
+            <li class="flex gap-2 text-sm">
+              <span class="w-2 h-2 rounded-full bg-violet-400 mt-1.5 flex-shrink-0"></span>
+              <span class="text-slate-600"><strong class="text-slate-800">Complexity Map</strong> — local Laplacian standard deviation. Bright regions = irregular, deteriorated surface texture.</span>
+            </li>
+          </ul>
+          <div class="bg-violet-50 rounded-xl px-4 py-2.5 text-xs text-violet-800">
+            A scalar <strong>Complexity Score</strong> (0–100) summarises overall surface irregularity and flags early-stage degradation before cracks become macroscopic.
+          </div>
+        </div>
+
+        <!-- Before / After Comparison -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 bg-sky-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800" style="font-family:Inter,sans-serif">Before / After Comparison</h3>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-4">
+            Tracks structural change over time by comparing two photographs of the same location taken at different dates.
+          </p>
+          <ul class="space-y-2 mb-4">
+            <li class="flex gap-2 text-sm">
+              <span class="w-2 h-2 rounded-full bg-sky-400 mt-1.5 flex-shrink-0"></span>
+              <span class="text-slate-600"><strong class="text-slate-800">SSIM Change Map</strong> — Structural Similarity Index highlights regions where luminance, contrast, or structure changed between visits.</span>
+            </li>
+            <li class="flex gap-2 text-sm">
+              <span class="w-2 h-2 rounded-full bg-sky-400 mt-1.5 flex-shrink-0"></span>
+              <span class="text-slate-600"><strong class="text-slate-800">Full pipeline on both images</strong> — classification, detection, and segmentation run independently on each image, so damage extent can be compared directly.</span>
+            </li>
+          </ul>
+          <div class="bg-sky-50 rounded-xl px-4 py-2.5 text-xs text-sky-800">
+            SSIM Δ score quantifies overall structural change (0 = identical, 1 = completely different). Red hotspots on the change map pinpoint where new damage emerged.
+          </div>
+        </div>
+      </div>
+
+      <!-- Synthetic Degradation Stages Note -->
+      <div class="bg-slate-800 rounded-2xl p-6 flex gap-5 items-start">
+        <div class="w-9 h-9 bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-slate-200 mb-1">Synthetic Degradation Stages (nb09)</p>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            Notebook 09 generates synthetic temporal sequences — five progressive degradation stages applied to a clean masonry image (weathering, crack seeding, crack widening, spalling, severe spalling) — providing ground-truth before/after pairs for validating the comparison pipeline where real multi-date photography is unavailable.
+          </p>
         </div>
       </div>
     </section>
