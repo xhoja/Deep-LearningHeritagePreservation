@@ -17,7 +17,7 @@ import segmentation_models_pytorch as smp
 import torch
 import torch.nn as nn
 import torchvision.models as tv_models
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -334,6 +334,107 @@ def _surface_analysis(img: Image.Image) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Preprocessing filters
+# ---------------------------------------------------------------------------
+FILTER_NAMES = ["none", "clahe", "crack_extract", "fft_highpass", "canny_overlay", "log_enhanced"]
+
+FILTER_LABELS = {
+    "none":          "Original",
+    "clahe":         "CLAHE",
+    "crack_extract": "Crack Extract",
+    "fft_highpass":  "FFT High-Pass",
+    "canny_overlay": "Canny Overlay",
+    "log_enhanced":  "LoG Enhanced",
+}
+
+FILTER_DESCRIPTIONS = {
+    "none":          "No preprocessing — raw input to models",
+    "clahe":         "Local contrast enhancement in LAB L-channel",
+    "crack_extract": "Bilateral + morphological black-hat transform",
+    "fft_highpass":  "Gaussian high-pass in 2D Fourier domain",
+    "canny_overlay": "Canny edge contours blended onto original",
+    "log_enhanced":  "Laplacian of Gaussian (Marr-Hildreth) blend",
+}
+
+
+def _apply_filter(img: Image.Image, filter_name: str) -> Image.Image:
+    if filter_name == "none":
+        return img
+
+    arr = np.array(img)
+
+    if filter_name == "clahe":
+        # Contrast Limited Adaptive Histogram Equalization on LAB L-channel
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "crack_extract":
+        # Bilateral denoise → black-hat morphology (extracts dark thin cracks) → CLAHE
+        denoised = cv2.bilateralFilter(arr, d=9, sigmaColor=75, sigmaSpace=75)
+        gray = cv2.cvtColor(denoised, cv2.COLOR_RGB2GRAY)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, kernel)
+        blackhat_3ch = cv2.cvtColor(blackhat, cv2.COLOR_GRAY2RGB)
+        combined = cv2.addWeighted(denoised, 0.6, blackhat_3ch, 0.4, 0)
+        lab = cv2.cvtColor(combined, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "fft_highpass":
+        # 2D DFT → Gaussian high-pass mask → IDFT → blend with original
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        L = lab[:, :, 0].astype(np.float32)
+        h, w = L.shape
+        cy, cx = h // 2, w // 2
+        fshift = np.fft.fftshift(np.fft.fft2(L))
+        Y, X = np.ogrid[:h, :w]
+        dist = np.sqrt((Y - cy) ** 2 + (X - cx) ** 2)
+        radius = min(h, w) / 8.0
+        hp_mask = 1.0 - np.exp(-dist ** 2 / (2 * radius ** 2))  # Gaussian high-pass
+        L_hp = np.abs(np.fft.ifft2(np.fft.ifftshift(fshift * hp_mask)))
+        L_hp_norm = (L_hp / (L_hp.max() + 1e-8) * 80).astype(np.float32)
+        lab[:, :, 0] = np.clip(L + L_hp_norm, 0, 255).astype(np.uint8)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "canny_overlay":
+        # Canny edge detection (bilateral pre-smooth) blended at 20% onto original
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        smooth = cv2.bilateralFilter(gray, d=7, sigmaColor=50, sigmaSpace=50)
+        edges = cv2.Canny(smooth, threshold1=40, threshold2=120)
+        edge_color = np.zeros_like(arr)
+        edge_color[edges > 0] = [220, 90, 20]
+        blended = cv2.addWeighted(arr, 0.82, edge_color, 0.18, 0)
+        lab = cv2.cvtColor(blended, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "log_enhanced":
+        # Laplacian of Gaussian (Marr-Hildreth): LoG magnitude blended as brightness boost
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
+        blurred = cv2.GaussianBlur(gray, (5, 5), sigmaX=1.2)
+        log_resp = cv2.Laplacian(blurred, cv2.CV_32F)
+        log_abs = np.abs(log_resp)
+        log_norm = (log_abs / (log_abs.max() + 1e-8) * 70).astype(np.uint8)
+        boost = cv2.cvtColor(log_norm, cv2.COLOR_GRAY2RGB)
+        blended = cv2.addWeighted(arr, 0.85, boost, 0.15, 0)
+        lab = cv2.cvtColor(blended, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    else:
+        return img
+
+    return Image.fromarray(out.astype(np.uint8))
+
+
+# ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Heritage Damage Assessment")
@@ -357,13 +458,43 @@ def analyze_page():
     return FileResponse(STATIC_DIR / "app.html")
 
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/filter-preview")
+async def filter_preview(file: UploadFile = File(...)):
+    """Return all filtered versions of the uploaded image as base64 thumbnails."""
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
     raw = await file.read()
     img = Image.open(io.BytesIO(raw)).convert("RGB")
+
+    # Thumbnail for fast preview (300px wide)
+    thumb_w = 300
+    ratio = thumb_w / img.width
+    thumb_h = int(img.height * ratio)
+    thumb = img.resize((thumb_w, thumb_h), Image.LANCZOS)
+
+    previews = {}
+    for name in FILTER_NAMES:
+        filtered = _apply_filter(thumb, name)
+        previews[name] = {
+            "label":       FILTER_LABELS[name],
+            "description": FILTER_DESCRIPTIONS[name],
+            "image_b64":   _pil_to_b64(filtered),
+        }
+
+    return JSONResponse({"filters": previews})
+
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...), filter_name: str = Form("none")):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    if filter_name not in FILTER_NAMES:
+        raise HTTPException(status_code=400, detail=f"Unknown filter: {filter_name}")
+
+    raw = await file.read()
+    img = Image.open(io.BytesIO(raw)).convert("RGB")
+    img = _apply_filter(img, filter_name)
 
     load_models()
 
@@ -383,6 +514,7 @@ async def predict(file: UploadFile = File(...)):
         "segmentation":   seg_res,
         "detection":      det_res,
         "surface":        surf_res,
+        "filter_applied": FILTER_LABELS[filter_name],
     })
 
 
@@ -401,12 +533,16 @@ def _ssim_map(g1: np.ndarray, g2: np.ndarray) -> tuple[float, np.ndarray]:
 
 
 @app.post("/compare")
-async def compare_images(before: UploadFile = File(...), after: UploadFile = File(...)):
+async def compare_images(before: UploadFile = File(...), after: UploadFile = File(...), filter_name: str = Form("none")):
     if not before.content_type.startswith("image/") or not after.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Both files must be images")
+    if filter_name not in FILTER_NAMES:
+        raise HTTPException(status_code=400, detail=f"Unknown filter: {filter_name}")
 
     img_b = Image.open(io.BytesIO(await before.read())).convert("RGB")
     img_a = Image.open(io.BytesIO(await after.read())).convert("RGB")
+    img_b = _apply_filter(img_b, filter_name)
+    img_a = _apply_filter(img_a, filter_name)
 
     load_models()
 
@@ -442,6 +578,7 @@ async def compare_images(before: UploadFile = File(...), after: UploadFile = Fil
         "change_map_b64": change_b64,
         "ssim_score":     round(ssim_score, 3),
         "ssim_change":    round(1.0 - ssim_score, 3),
+        "filter_applied": FILTER_LABELS[filter_name],
         "before": {
             "crack_pct":     seg_b["crack_pct"],
             "seg_b64":       seg_b["image_b64"],

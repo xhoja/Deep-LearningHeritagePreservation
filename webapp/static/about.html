@@ -262,6 +262,95 @@
       </div>
     </section>
 
+    <!-- PREPROCESSING FILTERS -->
+    <section class="mb-16">
+      <h2 class="text-3xl text-slate-900 mb-3">Image Preprocessing Filters</h2>
+      <p class="text-slate-500 mb-8">Before passing through the neural models, images can be enhanced using classical Digital Image Processing algorithms. Each filter is designed to reveal structural damage — cracks, spalling, surface deterioration — that may be difficult to detect in raw photographs. The same filter is applied consistently to both images in Before / After comparison mode.</p>
+
+      <div class="grid md:grid-cols-2 gap-5 mb-6">
+
+        <!-- CLAHE -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-bold text-xs">CL</span>
+            <h3 class="font-semibold text-slate-800" style="font-family:Inter,sans-serif">CLAHE</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">Histogram domain</span>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-2">
+            <strong class="text-slate-700">Contrast Limited Adaptive Histogram Equalization</strong> operates on the L-channel of the LAB colour space. Unlike global equalisation, CLAHE divides the image into small tiles and redistributes each tile's histogram independently — with a clip limit to prevent noise amplification. On heritage stone, where damage often hides in shadow or low-contrast regions, CLAHE is the single most effective preprocessing step.
+          </p>
+          <div class="bg-amber-50 rounded-lg px-3 py-2 text-xs text-amber-800">clipLimit = 3.0 · tileGrid = 8 × 8 · LAB L-channel only (preserves colour)</div>
+        </div>
+
+        <!-- Crack Extract -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 bg-rose-100 text-rose-700 rounded-lg flex items-center justify-center font-bold text-xs">BH</span>
+            <h3 class="font-semibold text-slate-800" style="font-family:Inter,sans-serif">Crack Extract</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">Morphological ops</span>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-2">
+            <strong class="text-slate-700">Bilateral filtering</strong> removes high-frequency noise while preserving edge sharpness. Then the <strong class="text-slate-700">Black-Hat morphological transform</strong> — defined as close(image) − image — extracts dark thin structures against a brighter background, precisely matching the profile of cracks on weathered stone walls. The result is blended at 40% onto the denoised image, then CLAHE-enhanced.
+          </p>
+          <div class="bg-rose-50 rounded-lg px-3 py-2 text-xs text-rose-800">Bilateral(d=9, σ=75) → Black-Hat(15×15 rect kernel) → CLAHE blend</div>
+        </div>
+
+        <!-- FFT High-Pass -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center font-bold text-xs">FFT</span>
+            <h3 class="font-semibold text-slate-800" style="font-family:Inter,sans-serif">FFT High-Pass</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">Frequency domain</span>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-2">
+            The 2D <strong class="text-slate-700">Discrete Fourier Transform</strong> decomposes the L-channel into spatial frequency components. A <strong class="text-slate-700">Gaussian high-pass mask</strong> (H(u,v) = 1 − e<sup>−D²/2D₀²</sup>) attenuates low frequencies (slow-varying background illumination, large surface regions) while retaining high frequencies that correspond to crack edges and fine surface details. The high-frequency residual is blended back onto the original before CLAHE normalisation.
+          </p>
+          <div class="bg-blue-50 rounded-lg px-3 py-2 text-xs text-blue-800">2D FFT → fftshift → Gaussian HP mask (D₀ = min(H,W)/8) → IFFT → blend + CLAHE</div>
+        </div>
+
+        <!-- Canny Overlay -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 bg-orange-100 text-orange-700 rounded-lg flex items-center justify-center font-bold text-xs">CE</span>
+            <h3 class="font-semibold text-slate-800" style="font-family:Inter,sans-serif">Canny Overlay</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">Edge detection</span>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-2">
+            The <strong class="text-slate-700">Canny edge detector</strong> applies bilateral pre-smoothing, then computes gradient magnitude and direction via Sobel operators. <strong class="text-slate-700">Non-maximum suppression</strong> thins edges to single-pixel width; <strong class="text-slate-700">double thresholding with hysteresis</strong> retains only strong, connected edges. Detected contours are tinted orange-red and blended at 18% opacity onto the original, highlighting crack boundaries while keeping the image recognisable to the trained neural models.
+          </p>
+          <div class="bg-orange-50 rounded-lg px-3 py-2 text-xs text-orange-800">Bilateral(σ=50) → Canny(T_low=40, T_high=120) → 18% overlay blend → CLAHE</div>
+        </div>
+
+        <!-- LoG Enhanced -->
+        <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:col-span-2">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-bold text-xs">LoG</span>
+            <h3 class="font-semibold text-slate-800" style="font-family:Inter,sans-serif">LoG Enhanced (Marr-Hildreth)</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">Second-order derivative</span>
+          </div>
+          <p class="text-slate-500 text-sm leading-relaxed mb-2">
+            The <strong class="text-slate-700">Laplacian of Gaussian</strong> (LoG), also known as the Marr-Hildreth operator, applies a Gaussian blur (σ = 1.2) to suppress noise, then computes the Laplacian (∇²f = ∂²f/∂x² + ∂²f/∂y²) which responds maximally at intensity edges and zero-crosses at edge centres. The absolute LoG response magnitude is normalised and blended at 15% as a brightness enhancement layer, subtly boosting crack edges without replacing the image structure that the models expect.
+          </p>
+          <div class="bg-violet-50 rounded-lg px-3 py-2 text-xs text-violet-800">Gaussian(σ=1.2, 5×5) → Laplacian (CV_32F) → |response| normalised → 15% blend → CLAHE</div>
+        </div>
+      </div>
+
+      <!-- Pipeline with filter -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-600">
+        <span class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-medium">Upload Image</span>
+        <span class="text-slate-400">→</span>
+        <span class="bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-3 py-1.5 font-medium">Select Filter (optional)</span>
+        <span class="text-slate-400">→</span>
+        <span class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-medium">Classification</span>
+        <span class="text-slate-300">+</span>
+        <span class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-medium">Detection</span>
+        <span class="text-slate-300">+</span>
+        <span class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-medium">Segmentation</span>
+        <span class="text-slate-400">→</span>
+        <span class="bg-slate-800 text-white rounded-lg px-3 py-1.5 font-medium">Damage Report</span>
+      </div>
+    </section>
+
     <!-- MODEL DETAILS -->
     <section class="mb-16">
       <h2 class="text-3xl text-slate-900 mb-8">How Each Model Works</h2>

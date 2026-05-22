@@ -56,6 +56,23 @@
     #thumb-list::-webkit-scrollbar { height: 4px; }
     #thumb-list::-webkit-scrollbar-track { background: transparent; }
     #thumb-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+    /* ── Filter cards ── */
+    .filter-card {
+      cursor: pointer; border-radius: 10px;
+      border: 2px solid transparent; overflow: hidden;
+      transition: border-color .18s, box-shadow .18s;
+      background: #f8fafc;
+    }
+    .filter-card:hover  { border-color: #94a3b8; }
+    .filter-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 3px #bfdbfe; background: #eff6ff; }
+    .filter-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+    .filter-card .fc-label { font-size: 11px; font-weight: 600; text-align: center;
+                              padding: 4px 4px 1px; color: #374151; }
+    .filter-card .fc-desc  { font-size: 9px; text-align: center; padding: 0 4px 5px;
+                              color: #9ca3af; line-height: 1.3; }
+    .filter-card.selected .fc-label { color: #2563eb; }
+    .filter-card.selected .fc-desc  { color: #60a5fa; }
   </style>
 </head>
 <body>
@@ -148,6 +165,17 @@
                  class="h-14 w-20 object-cover rounded-lg cursor-pointer ring-2 ring-transparent hover:ring-red-500 transition-all"/>
           </div>
           <p class="text-xs text-slate-300 mt-1.5">Last 2: synthetic degradation stages (nb09)</p>
+        </div>
+
+        <!-- Filter preview panel -->
+        <div id="filter-panel" class="hidden mt-4">
+          <div class="flex items-center gap-2 mb-2">
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest">Preprocessing Filter</p>
+            <div id="filter-spinner" class="hidden w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full flex-shrink-0"
+                 style="animation:spin .7s linear infinite"></div>
+          </div>
+          <div id="filter-grid" class="grid grid-cols-3 gap-2"></div>
+          <p class="text-xs text-slate-300 mt-1.5">Applied before all models — helps reveal cracks on stone surfaces</p>
         </div>
 
         <button id="analyse-btn" onclick="analyseAll()" disabled
@@ -294,6 +322,7 @@
       <div class="fade-up bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         <div class="flex items-center gap-2 mb-3">
           <span class="font-semibold text-slate-700">Detection</span>
+          <span id="filter-applied-badge" class="hidden text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium"></span>
           <span class="ml-auto text-xs text-slate-400">YOLOv8s · mAP@50 54.4% · SAHI</span>
         </div>
         <img id="det-img" src="" alt="Detection" class="result-img mb-3"/>
@@ -398,6 +427,18 @@
             ✕ Remove
           </button>
         </div>
+      </div>
+
+      <!-- Compare filter panel -->
+      <div id="cmp-filter-panel" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
+        <div class="flex items-center gap-2 mb-3">
+          <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest">Preprocessing Filter</p>
+          <div id="cmp-filter-spinner" class="hidden w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full flex-shrink-0"
+               style="animation:spin .7s linear infinite"></div>
+          <span class="ml-auto text-xs text-slate-400">Applied to both images before analysis</span>
+        </div>
+        <div id="cmp-filter-grid" class="grid grid-cols-3 gap-2"></div>
+        <p class="text-xs text-slate-300 mt-1.5">Helps reveal cracks on stone — same filter applied to before &amp; after</p>
       </div>
 
       <button id="compare-btn" onclick="runCompare()" disabled
@@ -512,6 +553,8 @@
     let stepTimers   = [];
     let currentView  = 'cam';   // 'cam' | 'gabor' | 'entropy'
     let viewImgs     = {};      // { cam, gabor, entropy } base64 srcs
+    let selectedFilter = 'none';
+    let filterPreviews = {};    // { name: { label, image_b64 } }
     const VIEW_META  = {
       cam:     { caption: 'Grad-CAM: red regions drove the classification decision' },
       gabor:   { caption: 'Gabor energy — 6 orientations × 3 wavelengths, highlights crack-like edges' },
@@ -557,12 +600,89 @@
     }
 
     function addFiles(files) {
+      const wasEmpty = queue.length === 0;
       for (const f of files) {
         queue.push({ file: f, objectUrl: URL.createObjectURL(f), status: 'pending', results: null, error: null });
       }
       renderThumbs();
       updateAnalyseBtn();
       if (selectedIdx === -1) selectImage(0);
+      if (wasEmpty && queue.length > 0) loadFilterPreviews(queue[0].file);
+    }
+
+    // ── Filter preview ─────────────────────────────────────────────────────
+    async function loadFilterPreviews(file) {
+      document.getElementById('filter-panel').classList.remove('hidden');
+      document.getElementById('filter-spinner').classList.remove('hidden');
+      document.getElementById('filter-grid').innerHTML = '';
+
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res  = await fetch('/filter-preview', { method: 'POST', body: form });
+        const data = await res.json();
+        filterPreviews = data.filters;
+        renderFilterGrid();
+      } catch(e) {
+        console.error('Filter preview failed:', e);
+      } finally {
+        document.getElementById('filter-spinner').classList.add('hidden');
+      }
+    }
+
+    function renderFilterGrid() {
+      document.getElementById('filter-grid').innerHTML =
+        Object.entries(filterPreviews).map(([name, f]) =>
+          `<div class="filter-card ${name === selectedFilter ? 'selected' : ''}" onclick="selectFilter('${name}')">
+             <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
+             <p class="fc-label">${f.label}</p>
+             <p class="fc-desc">${f.description || ''}</p>
+           </div>`
+        ).join('');
+    }
+
+    function selectFilter(name) {
+      selectedFilter = name;
+      renderFilterGrid();
+    }
+
+    // ── Compare filter ─────────────────────────────────────────────────────
+    let cmpSelectedFilter = 'none';
+    let cmpFilterPreviews = {};
+
+    async function loadCmpFilterPreviews(file) {
+      document.getElementById('cmp-filter-panel').classList.remove('hidden');
+      document.getElementById('cmp-filter-spinner').classList.remove('hidden');
+      document.getElementById('cmp-filter-grid').innerHTML = '';
+
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res  = await fetch('/filter-preview', { method: 'POST', body: form });
+        const data = await res.json();
+        cmpFilterPreviews = data.filters;
+        renderCmpFilterGrid();
+      } catch(e) {
+        console.error('Compare filter preview failed:', e);
+      } finally {
+        document.getElementById('cmp-filter-spinner').classList.add('hidden');
+      }
+    }
+
+    function renderCmpFilterGrid() {
+      document.getElementById('cmp-filter-grid').innerHTML =
+        Object.entries(cmpFilterPreviews).map(([name, f]) =>
+          `<div class="filter-card ${name === cmpSelectedFilter ? 'selected' : ''}" onclick="selectCmpFilter('${name}')">
+             <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
+             <p class="fc-label">${f.label}</p>
+             <p class="fc-desc">${f.description || ''}</p>
+           </div>`
+        ).join('');
+    }
+
+    function selectCmpFilter(name) {
+      cmpSelectedFilter = name;
+      renderCmpFilterGrid();
     }
 
     // ── Queue UI ───────────────────────────────────────────────────────────
@@ -636,6 +756,10 @@
       selectedIdx  = -1;
       lastResults  = null;
       currentSeverity = 'NONE';
+      selectedFilter  = 'none';
+      filterPreviews  = {};
+      document.getElementById('filter-panel').classList.add('hidden');
+      document.getElementById('filter-grid').innerHTML = '';
       renderThumbs();
       updateAnalyseBtn();
       resetResults();
@@ -711,6 +835,7 @@
 
         const form = new FormData();
         form.append('file', queue[i].file);
+        form.append('filter_name', selectedFilter);
 
         try {
           const res = await fetch('/predict', { method: 'POST', body: form });
@@ -894,6 +1019,14 @@
       currentSeverity    = getSeverity(clsIsCracked, detFound, segFound, seg.crack_pct);
       renderSeverity(currentSeverity, clsIsCracked, detFound, segFound);
 
+      const filterBadge = document.getElementById('filter-applied-badge');
+      if (data.filter_applied && data.filter_applied !== 'Original') {
+        filterBadge.textContent = data.filter_applied;
+        filterBadge.classList.remove('hidden');
+      } else {
+        filterBadge.classList.add('hidden');
+      }
+
       document.getElementById('det-img').src = 'data:image/jpeg;base64,' + det.image_b64;
       document.getElementById('det-caption').textContent = det.n_boxes > 0
         ? `${det.n_boxes} crack region${det.n_boxes > 1 ? 's' : ''} detected${det.sensitive ? ' (sensitive mode)' : ''}`
@@ -941,7 +1074,7 @@
       lastResults     = null;
       currentSeverity = 'NONE';
 
-      ['error-box','download-row'].forEach(id =>
+      ['error-box','download-row','filter-applied-badge'].forEach(id =>
         document.getElementById(id).classList.add('hidden'));
 
       const sev = document.getElementById('severity-card');
@@ -997,6 +1130,7 @@
       document.getElementById('cmp-' + side + '-zone').classList.add('hidden');
       document.getElementById('cmp-' + side + '-clear').classList.remove('hidden');
       updateCompareBtn();
+      if (side === 'before' && !Object.keys(cmpFilterPreviews).length) loadCmpFilterPreviews(file);
     }
 
     function clearCmpFile(side) {
@@ -1004,6 +1138,12 @@
       document.getElementById('cmp-' + side + '-preview').classList.add('hidden');
       document.getElementById('cmp-' + side + '-zone').classList.remove('hidden');
       document.getElementById('cmp-' + side + '-clear').classList.add('hidden');
+      if (side === 'before') {
+        cmpSelectedFilter = 'none';
+        cmpFilterPreviews = {};
+        document.getElementById('cmp-filter-panel').classList.add('hidden');
+        document.getElementById('cmp-filter-grid').innerHTML = '';
+      }
       updateCompareBtn();
     }
 
@@ -1021,6 +1161,7 @@
       const form = new FormData();
       form.append('before', cmpFiles.before);
       form.append('after',  cmpFiles.after);
+      form.append('filter_name', cmpSelectedFilter);
 
       try {
         const res  = await fetch('/compare', { method: 'POST', body: form });

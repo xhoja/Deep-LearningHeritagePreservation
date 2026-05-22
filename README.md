@@ -111,7 +111,8 @@ heritage-damage-assessment/
 │   ├── 06_failure_analysis.ipynb      # Failure analysis & Grad-CAM++ across all three models
 │   ├── 07_sahi_evaluation.ipynb       # SAHI sliced inference vs plain YOLO comparison
 │   ├── 08_classifier_finetuning.ipynb # Classifier domain adaptation on heritage masonry data
-│   └── 09_degradation_analysis.ipynb  # Synthetic temporal degradation + classical filter bank analysis
+│   ├── 09_degradation_analysis.ipynb  # Synthetic temporal degradation + classical filter bank analysis
+│   └── 10_dacl10k_detector.ipynb      # Detector retrain on DACL10k (5-class structural damage, mAP@50 54.4%)
 │
 ├── samples/                       # Testing samples for validation (required deliverable)
 │   ├── images/                    # Sample input images
@@ -501,23 +502,60 @@ Score = 0.25·(1−SSIM) + 0.25·ΔGabor + 0.25·Δentropy + 0.25·GLCM\_contras
 
 FastAPI demo in `webapp/`. Upload masonry images and get a full three-model damage report in the browser.
 
-**Features:**
-- **Multi-image batch mode** — drop multiple files; results processed sequentially with live thumbnail status badges (pending → running → done/error); click any completed thumbnail to review its results
-- **Animated step loader** — Classifying → Detecting → Segmenting with checkmarks (single-image mode)
-- **Severity summary card** — CRITICAL / HIGH / MODERATE / LOW / NONE verdict derived from model consensus (X/3 models agree), with per-model agree/disagree breakdown
-- **Crack arc gauge** — SVG donut gauge colour-coded by coverage (<5% green, 5–15% yellow, 15–30% orange, >30% red)
-- **Grad-CAM overlay** — EfficientNet-B4 attention map on the uploaded image
-- **JSON report download** — exports severity, classification, detection, and segmentation results with timestamp
-
 **Run locally:**
 ```bash
 cd webapp
-pip install fastapi uvicorn pillow torch torchvision ultralytics segmentation-models-pytorch
-uvicorn app:app --reload --port 8000
-# open http://localhost:8000
+pip install fastapi uvicorn pillow torch torchvision ultralytics segmentation-models-pytorch sahi opencv-python
+uvicorn main:app --reload --port 8001
+# open http://localhost:8001
 ```
 
-> **Note on classifier vs. detector/segmentor agreement:** In practice the classifier occasionally disagrees with the detector and segmentor on fine-grained heritage cracks. The detector and segmentor share a spatial-feature inductive bias that transfers better across domains; the classifier operates on global image statistics and is more sensitive to domain shift. The severity card surfaces this disagreement explicitly rather than hiding it.
+### Analysis Mode — Single Image
+
+Upload one or more images; all three models run in parallel via `ThreadPoolExecutor`.
+
+| Feature | Detail |
+|---|---|
+| **Multi-image batch queue** | Drop multiple files; live thumbnail badges (pending → running → done/error); click any thumbnail to inspect its results |
+| **Animated step loader** | 4-step progress: Classifying → Detecting → Segmenting → Analysing surface texture |
+| **Severity summary card** | CRITICAL / HIGH / MODERATE / LOW / NONE from model consensus (X/3 agree) with per-model breakdown |
+| **Classification card** | EfficientNet-B4 label + cracked % + tab switcher: Grad-CAM / Gabor Energy / Complexity Map |
+| **Surface texture analysis** | Gabor filter bank (6 orientations × 3 wavelengths) + local Laplacian std complexity map; scalar Complexity Score 0–100 |
+| **Detection card** | YOLOv8s + SAHI bounding boxes; sensitive fallback at conf=0.10; filter badge shown when preprocessing applied |
+| **Segmentation card** | U-Net/ResNet34 pixel mask; SVG arc gauge colour-coded by crack % (<5% green → >30% red) |
+| **JSON report download** | Exports severity, classification, detection, segmentation, surface texture, and applied filter with timestamp |
+
+### Preprocessing Filters
+
+Before running through any model, images can be enhanced using classical Digital Image Processing algorithms. A filter preview panel appears after upload — all six variants are rendered as thumbnails so the user can compare and select before running analysis. The same filter is applied to all three models.
+
+| Filter | Algorithm | Effect |
+|---|---|---|
+| **Original** | None | Raw input — baseline |
+| **CLAHE** | Contrast Limited Adaptive Histogram Equalization (LAB L-channel, clip=3.0, 8×8 tiles) | Boosts local contrast; best general-purpose choice for heritage stone |
+| **Crack Extract** | Bilateral filter → morphological black-hat (15×15 rect kernel) → CLAHE | Explicitly extracts dark thin cracks against brighter masonry background |
+| **FFT High-Pass** | 2D DFT → Gaussian high-pass mask (D₀=min(H,W)/8) → IDFT → blend + CLAHE | Removes slow-varying illumination; retains crack-frequency edges |
+| **Canny Overlay** | Bilateral pre-smooth → Canny (T_low=40, T_high=120) → 18% edge-colour blend → CLAHE | Highlights crack contours; keeps image recognisable to trained models |
+| **LoG Enhanced** | Gaussian(σ=1.2) → Laplacian (Marr-Hildreth) → 15% magnitude blend → CLAHE | Subtly boosts second-order edge responses at crack boundaries |
+
+Filter panel is available in both **Single Image** and **Before / After** modes. In compare mode the selected filter is applied identically to both images before SSIM and model analysis.
+
+### Before / After Comparison Mode
+
+Upload two photographs of the same location at different dates. The backend applies the chosen preprocessing filter to both, then runs the full pipeline.
+
+| Feature | Detail |
+|---|---|
+| **SSIM change map** | Per-pixel structural dissimilarity (1 − SSIM) rendered as INFERNO heatmap; bright = greatest change |
+| **SSIM Δ score** | Global structural change 0–1 (0 = identical, 1 = completely different) |
+| **Side-by-side segmentation** | Crack mask overlaid on before + after with coverage % and complexity score for each |
+| **Degradation summary** | Crack Δ (pp), Complexity Δ (pts), SSIM Δ (%) with colour-coded deltas |
+| **Verdict** | Automated conservation recommendation based on combined delta thresholds |
+| **JSON export** | Full comparison report with all deltas and filter applied |
+
+Synthetic degradation examples from notebook 09 (`deg_s0_r0.jpg` → `deg_s3_r0.jpg`) serve as ground-truth before/after pairs for demo and validation.
+
+> **Note on classifier vs. detector/segmentor agreement:** The classifier operates on global image statistics and is more sensitive to domain shift than the detector/segmentor, which share spatial-feature inductive biases. The severity card surfaces this disagreement explicitly (X/3 models agree) rather than hiding it behind a single score.
 
 ---
 
@@ -570,8 +608,13 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Task 7: SAHI sliced inference evaluation — plain YOLO 28.0% vs SAHI 18.9% (SAHI underperforms on this domain)
 - [x] Task 1b: Classifier domain adaptation — heritage cracked recall 71.2% → 98.1% after fine-tuning on masonry+crackforest
 - [x] Task 9: Synthetic temporal degradation analysis — Gabor/LoG/entropy/GLCM filter bank, SSIM change maps, degradation score, DL classifier validation (Pearson r=0.843)
+- [x] Task 10: DACL10k detector retrain — YOLOv8s fine-tuned on 5-class structural damage dataset (cracks, spalling, corrosion, efflorescence, vegetation); mAP@50 54.4%; deployed in webapp
 - [x] Populate `samples/` with validation images (saved via notebook 06)
-- [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, JSON export
+- [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, Grad-CAM + surface texture view switcher, JSON export
+- [x] Webapp: Before/After comparison mode — SSIM change map, side-by-side segmentation, degradation summary with conservation verdict
+- [x] Webapp: Synthetic degradation examples integrated into upload panel (nb09 stages 0–3)
+- [x] Webapp: Image preprocessing filter panel — 6 classical CV filters (CLAHE, Black-Hat/Crack Extract, FFT High-Pass, Canny Overlay, LoG Enhanced) with academic descriptions; applied before all models; available in both single and compare modes
+- [x] About page: full academic documentation of pipeline, degradation analysis, and preprocessing filter theory
 - [ ] Write project report (`report/report.pdf`)
 - [ ] Write article reading survey (`report/article_survey.pdf`)
 
