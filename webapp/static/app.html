@@ -59,20 +59,73 @@
 
     /* ── Filter cards ── */
     .filter-card {
-      cursor: pointer; border-radius: 10px;
+      cursor: pointer; border-radius: 10px; position: relative;
       border: 2px solid transparent; overflow: hidden;
-      transition: border-color .18s, box-shadow .18s;
+      transition: border-color .18s, box-shadow .18s, opacity .18s;
       background: #f8fafc;
     }
     .filter-card:hover  { border-color: #94a3b8; }
     .filter-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 3px #bfdbfe; background: #eff6ff; }
+    .filter-card.muted  { opacity: 0.38; pointer-events: none; }
     .filter-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
     .filter-card .fc-label { font-size: 11px; font-weight: 600; text-align: center;
                               padding: 4px 4px 1px; color: #374151; }
-    .filter-card .fc-desc  { font-size: 9px; text-align: center; padding: 0 4px 5px;
+    .filter-card .fc-desc  { font-size: 9px; text-align: center; padding: 0 4px 4px;
                               color: #9ca3af; line-height: 1.3; }
+    .filter-card .fc-badge { font-size: 8px; font-weight: 600; text-align: center;
+                              padding: 0 4px 5px; display: block; }
     .filter-card.selected .fc-label { color: #2563eb; }
     .filter-card.selected .fc-desc  { color: #60a5fa; }
+    .fc-order {
+      position: absolute; top: 4px; left: 4px; z-index: 2;
+      background: #2563eb; color: #fff; border-radius: 9999px;
+      width: 18px; height: 18px; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+
+    /* ── Pipeline chip strip ── */
+    .pipeline-strip { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+    .pipeline-label { font-size: 10px; color: #94a3b8; font-weight: 600;
+                      text-transform: uppercase; letter-spacing: .05em; }
+    .pipeline-hint  { font-size: 9px; color: #cbd5e1; }
+    .pip-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 9999px;
+      padding: 2px 8px 2px 5px; font-size: 11px; font-weight: 600; color: #2563eb;
+      cursor: grab; user-select: none; transition: border-color .12s, background .12s, transform .12s;
+    }
+    .pip-chip:active { cursor: grabbing; }
+    .pip-chip.drag-over { border-color: #1d4ed8; background: #dbeafe; transform: scale(1.06); }
+    .pip-chip.dragging  { opacity: .4; }
+    .pip-chip .chip-num {
+      background: #2563eb; color: #fff; border-radius: 9999px;
+      width: 15px; height: 15px; font-size: 9px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .pip-chip .chip-x {
+      font-size: 13px; color: #93c5fd; cursor: pointer; line-height: 1;
+      background: none; border: none; padding: 0 0 0 3px;
+    }
+    .pip-chip .chip-x:hover { color: #ef4444; }
+    .pip-arrow { font-size: 10px; color: #cbd5e1; }
+
+    /* ── Category tab bar ── */
+    .cat-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+    .cat-tab {
+      font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 9999px;
+      border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .cat-tab:hover { border-color: #94a3b8; color: #374151; }
+    .cat-tab.active { background: #1e40af; border-color: #1e40af; color: #fff; }
+
+    /* ── Category badge colours ── */
+    .badge-Enhancement    { color: #2563eb; }
+    .badge-Edge           { color: #ea580c; }
+    .badge-Frequency      { color: #7c3aed; }
+    .badge-Morphology     { color: #0d9488; }
+    .badge-Noise          { color: #475569; }
   </style>
 </head>
 <body>
@@ -173,7 +226,9 @@
             <div id="filter-spinner" class="hidden w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full flex-shrink-0"
                  style="animation:spin .7s linear infinite"></div>
           </div>
+          <div id="filter-tabs" class="cat-tabs"></div>
           <div id="filter-grid" class="grid grid-cols-3 gap-2"></div>
+          <div id="filter-pipeline" class="hidden mt-2"></div>
           <p class="text-xs text-slate-300 mt-1.5">Applied before all models — helps reveal cracks on stone surfaces</p>
         </div>
 
@@ -436,7 +491,9 @@
                style="animation:spin .7s linear infinite"></div>
           <span class="ml-auto text-xs text-slate-400">Applied to both images before analysis</span>
         </div>
+        <div id="cmp-filter-tabs" class="cat-tabs"></div>
         <div id="cmp-filter-grid" class="grid grid-cols-3 gap-2"></div>
+        <div id="cmp-filter-pipeline" class="hidden mt-2"></div>
         <p class="text-xs text-slate-300 mt-1.5">Helps reveal cracks on stone — same filter applied to before &amp; after</p>
       </div>
 
@@ -552,8 +609,11 @@
     let stepTimers   = [];
     let currentView  = 'cam';   // 'cam' | 'gabor' | 'entropy'
     let viewImgs     = {};      // { cam, gabor, entropy } base64 srcs
-    let selectedFilter = 'none';
-    let filterPreviews = {};    // { name: { label, image_b64 } }
+    let selectedFilters    = [];   // ordered pipeline for main panel
+    let filterPreviews     = {};   // { name: { label, category, image_b64 } }
+    let activeFilterCat    = 'All';
+    let activeCmpFilterCat = 'All';
+    const MAX_PIPELINE     = 3;
     const VIEW_META  = {
       cam:     { caption: 'Grad-CAM: red regions drove the classification decision' },
       gabor:   { caption: 'Gabor energy — 6 orientations × 3 wavelengths, highlights crack-like edges' },
@@ -629,25 +689,127 @@
       }
     }
 
-    function renderFilterGrid() {
-      document.getElementById('filter-grid').innerHTML =
-        Object.entries(filterPreviews).map(([name, f]) =>
-          `<div class="filter-card ${name === selectedFilter ? 'selected' : ''}" onclick="selectFilter('${name}')">
-             <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
-             <p class="fc-label">${f.label}</p>
-             <p class="fc-desc">${f.description || ''}</p>
-           </div>`
-        ).join('');
+    const CAT_ORDER = ['All', 'Enhancement', 'Edge & Structure', 'Frequency', 'Morphology', 'Noise Reduction'];
+    const CAT_BADGE_CLASS = {
+      'Enhancement':      'badge-Enhancement',
+      'Edge & Structure': 'badge-Edge',
+      'Frequency':        'badge-Frequency',
+      'Morphology':       'badge-Morphology',
+      'Noise Reduction':  'badge-Noise',
+    };
+
+    // ── Chip drag state ────────────────────────────────────────────────────
+    let _chipDrag = { panel: null, fromIdx: -1 };
+
+    function onChipDragStart(e, panel, idx) {
+      _chipDrag = { panel, fromIdx: idx };
+      e.dataTransfer.effectAllowed = 'move';
+      e.currentTarget.classList.add('dragging');
+    }
+    function onChipDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('drag-over');
+    }
+    function onChipDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+    function onChipDrop(e, panel, toIdx) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      if (_chipDrag.panel !== panel || _chipDrag.fromIdx === toIdx) return;
+      const arr = panel === 'main' ? selectedFilters : cmpSelectedFilters;
+      const [item] = arr.splice(_chipDrag.fromIdx, 1);
+      arr.splice(toIdx, 0, item);
+      panel === 'main' ? renderFilterGrid() : renderCmpFilterGrid();
+    }
+    function onChipDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+      document.querySelectorAll('.pip-chip').forEach(c => c.classList.remove('drag-over'));
     }
 
+    // ── Pipeline strip renderer ────────────────────────────────────────────
+    function renderPipelineStrip(selFilters, previews, stripId, panel, removeFn) {
+      const el = document.getElementById(stripId);
+      if (selFilters.length === 0) { el.classList.add('hidden'); return; }
+      el.classList.remove('hidden');
+      const chips = selFilters.map((name, i) => {
+        const label = previews[name]?.label || name;
+        const arrow = i < selFilters.length - 1 ? '<span class="pip-arrow">→</span>' : '';
+        return `<div class="pip-chip" draggable="true"
+                     ondragstart="onChipDragStart(event,'${panel}',${i})"
+                     ondragover="onChipDragOver(event)"
+                     ondragleave="onChipDragLeave(event)"
+                     ondrop="onChipDrop(event,'${panel}',${i})"
+                     ondragend="onChipDragEnd(event)">
+                  <span class="chip-num">${i + 1}</span>
+                  ${label}
+                  <button class="chip-x" onclick="${removeFn}('${name}')">×</button>
+                </div>${arrow}`;
+      }).join('');
+      el.innerHTML = `<div class="pipeline-strip">
+        <span class="pipeline-label">Pipeline:</span>
+        ${chips}
+        <span class="pipeline-hint">(drag to reorder)</span>
+      </div>`;
+    }
+
+    // ── Category tabs ──────────────────────────────────────────────────────
+    function buildCategoryTabs(previews, activeCategory, tabsElId, onClickFn) {
+      const el = document.getElementById(tabsElId);
+      const present = new Set(Object.values(previews).map(f => f.category));
+      const tabs = CAT_ORDER.filter(c => c === 'All' || present.has(c));
+      el.innerHTML = tabs.map(c =>
+        `<button class="cat-tab ${c === activeCategory ? 'active' : ''}" onclick="${onClickFn}('${c}')">${c}</button>`
+      ).join('');
+    }
+
+    // ── Main filter panel ──────────────────────────────────────────────────
+    function filterCardHTML(name, f, selFilters) {
+      const pos      = selFilters.indexOf(name);
+      const selected = pos >= 0;
+      const isNone   = name === 'none';
+      const noneActive = selFilters.length === 0;
+      const full     = selFilters.length >= MAX_PIPELINE;
+      const muted    = full && !selected && !isNone;
+      const badgeCls = CAT_BADGE_CLASS[f.category] || '';
+      const orderBadge = selected ? `<span class="fc-order">${pos + 1}</span>` : '';
+      const onclick  = isNone ? 'clearSelectedFilters()' : `selectFilter('${name}')`;
+      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}${muted ? ' muted' : ''}`;
+      return `<div class="${cls}" onclick="${onclick}">
+               ${orderBadge}
+               <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
+               <p class="fc-label">${f.label}</p>
+               <p class="fc-desc">${f.description || ''}</p>
+               <span class="fc-badge ${badgeCls}">${f.category}</span>
+             </div>`;
+    }
+
+    function renderFilterGrid() {
+      buildCategoryTabs(filterPreviews, activeFilterCat, 'filter-tabs', 'setFilterCat');
+      const entries = Object.entries(filterPreviews)
+        .filter(([, f]) => activeFilterCat === 'All' || f.category === activeFilterCat);
+      document.getElementById('filter-grid').innerHTML = entries
+        .map(([name, f]) => filterCardHTML(name, f, selectedFilters)).join('');
+      renderPipelineStrip(selectedFilters, filterPreviews, 'filter-pipeline', 'main', 'removeFromPipeline');
+    }
+
+    function setFilterCat(cat) { activeFilterCat = cat; renderFilterGrid(); }
+
     function selectFilter(name) {
-      selectedFilter = name;
+      const idx = selectedFilters.indexOf(name);
+      if (idx >= 0) {
+        selectedFilters.splice(idx, 1);
+      } else if (selectedFilters.length < MAX_PIPELINE) {
+        selectedFilters.push(name);
+      }
       renderFilterGrid();
     }
 
-    // ── Compare filter ─────────────────────────────────────────────────────
-    let cmpSelectedFilter = 'none';
-    let cmpFilterPreviews = {};
+    function clearSelectedFilters() { selectedFilters = []; renderFilterGrid(); }
+    function removeFromPipeline(name) { selectFilter(name); }
+
+    // ── Compare filter panel ───────────────────────────────────────────────
+    let cmpSelectedFilters = [];
+    let cmpFilterPreviews  = {};
 
     async function loadCmpFilterPreviews(file) {
       document.getElementById('cmp-filter-panel').classList.remove('hidden');
@@ -668,21 +830,49 @@
       }
     }
 
-    function renderCmpFilterGrid() {
-      document.getElementById('cmp-filter-grid').innerHTML =
-        Object.entries(cmpFilterPreviews).map(([name, f]) =>
-          `<div class="filter-card ${name === cmpSelectedFilter ? 'selected' : ''}" onclick="selectCmpFilter('${name}')">
-             <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
-             <p class="fc-label">${f.label}</p>
-             <p class="fc-desc">${f.description || ''}</p>
-           </div>`
-        ).join('');
+    function cmpFilterCardHTML(name, f, selFilters) {
+      const pos      = selFilters.indexOf(name);
+      const selected = pos >= 0;
+      const isNone   = name === 'none';
+      const noneActive = selFilters.length === 0;
+      const full     = selFilters.length >= MAX_PIPELINE;
+      const muted    = full && !selected && !isNone;
+      const badgeCls = CAT_BADGE_CLASS[f.category] || '';
+      const orderBadge = selected ? `<span class="fc-order">${pos + 1}</span>` : '';
+      const onclick  = isNone ? 'clearCmpSelectedFilters()' : `selectCmpFilter('${name}')`;
+      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}${muted ? ' muted' : ''}`;
+      return `<div class="${cls}" onclick="${onclick}">
+               ${orderBadge}
+               <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
+               <p class="fc-label">${f.label}</p>
+               <p class="fc-desc">${f.description || ''}</p>
+               <span class="fc-badge ${badgeCls}">${f.category}</span>
+             </div>`;
     }
 
+    function renderCmpFilterGrid() {
+      buildCategoryTabs(cmpFilterPreviews, activeCmpFilterCat, 'cmp-filter-tabs', 'setCmpFilterCat');
+      const entries = Object.entries(cmpFilterPreviews)
+        .filter(([, f]) => activeCmpFilterCat === 'All' || f.category === activeCmpFilterCat);
+      document.getElementById('cmp-filter-grid').innerHTML = entries
+        .map(([name, f]) => cmpFilterCardHTML(name, f, cmpSelectedFilters)).join('');
+      renderPipelineStrip(cmpSelectedFilters, cmpFilterPreviews, 'cmp-filter-pipeline', 'cmp', 'removeFromCmpPipeline');
+    }
+
+    function setCmpFilterCat(cat) { activeCmpFilterCat = cat; renderCmpFilterGrid(); }
+
     function selectCmpFilter(name) {
-      cmpSelectedFilter = name;
+      const idx = cmpSelectedFilters.indexOf(name);
+      if (idx >= 0) {
+        cmpSelectedFilters.splice(idx, 1);
+      } else if (cmpSelectedFilters.length < MAX_PIPELINE) {
+        cmpSelectedFilters.push(name);
+      }
       renderCmpFilterGrid();
     }
+
+    function clearCmpSelectedFilters() { cmpSelectedFilters = []; renderCmpFilterGrid(); }
+    function removeFromCmpPipeline(name) { selectCmpFilter(name); }
 
     // ── Queue UI ───────────────────────────────────────────────────────────
     function renderThumbs() {
@@ -755,7 +945,7 @@
       selectedIdx  = -1;
       lastResults  = null;
       currentSeverity = 'NONE';
-      selectedFilter  = 'none';
+      selectedFilters = [];
       filterPreviews  = {};
       document.getElementById('filter-panel').classList.add('hidden');
       document.getElementById('filter-grid').innerHTML = '';
@@ -834,7 +1024,7 @@
 
         const form = new FormData();
         form.append('file', queue[i].file);
-        form.append('filter_name', selectedFilter);
+        form.append('filter_name', selectedFilters.length ? selectedFilters.join(',') : 'none');
 
         try {
           const res = await fetch('/predict', { method: 'POST', body: form });
@@ -1138,10 +1328,11 @@
       document.getElementById('cmp-' + side + '-zone').classList.remove('hidden');
       document.getElementById('cmp-' + side + '-clear').classList.add('hidden');
       if (side === 'before') {
-        cmpSelectedFilter = 'none';
-        cmpFilterPreviews = {};
+        cmpSelectedFilters = [];
+        cmpFilterPreviews  = {};
         document.getElementById('cmp-filter-panel').classList.add('hidden');
         document.getElementById('cmp-filter-grid').innerHTML = '';
+        document.getElementById('cmp-filter-pipeline').classList.add('hidden');
       }
       updateCompareBtn();
     }
@@ -1160,7 +1351,7 @@
       const form = new FormData();
       form.append('before', cmpFiles.before);
       form.append('after',  cmpFiles.after);
-      form.append('filter_name', cmpSelectedFilter);
+      form.append('filter_name', cmpSelectedFilters.length ? cmpSelectedFilters.join(',') : 'none');
 
       try {
         const res  = await fetch('/compare', { method: 'POST', body: form });

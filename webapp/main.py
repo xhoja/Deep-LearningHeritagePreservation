@@ -336,24 +336,60 @@ def _surface_analysis(img: Image.Image) -> dict:
 # ---------------------------------------------------------------------------
 # Preprocessing filters
 # ---------------------------------------------------------------------------
-FILTER_NAMES = ["none", "clahe", "crack_extract", "fft_highpass", "canny_overlay", "log_enhanced"]
+FILTER_NAMES = [
+    "none", "clahe", "gamma_correct",
+    "sobel_overlay", "canny_overlay", "log_enhanced",
+    "fft_highpass", "fft_lowpass",
+    "crack_extract", "tophat_morph", "gradient_morph",
+    "bilateral_denoise", "median_denoise",
+]
 
 FILTER_LABELS = {
-    "none":          "Original",
-    "clahe":         "CLAHE",
-    "crack_extract": "Crack Extract",
-    "fft_highpass":  "FFT High-Pass",
-    "canny_overlay": "Canny Overlay",
-    "log_enhanced":  "LoG Enhanced",
+    "none":             "Original",
+    "clahe":            "CLAHE",
+    "gamma_correct":    "Gamma Correct",
+    "sobel_overlay":    "Sobel Overlay",
+    "canny_overlay":    "Canny Overlay",
+    "log_enhanced":     "LoG Enhanced",
+    "fft_highpass":     "FFT High-Pass",
+    "fft_lowpass":      "FFT Low-Pass",
+    "crack_extract":    "Crack Extract",
+    "tophat_morph":     "Top-Hat",
+    "gradient_morph":   "Morph Gradient",
+    "bilateral_denoise":"Bilateral Denoise",
+    "median_denoise":   "Median Denoise",
 }
 
 FILTER_DESCRIPTIONS = {
-    "none":          "No preprocessing — raw input to models",
-    "clahe":         "Local contrast enhancement in LAB L-channel",
-    "crack_extract": "Bilateral + morphological black-hat transform",
-    "fft_highpass":  "Gaussian high-pass in 2D Fourier domain",
-    "canny_overlay": "Canny edge contours blended onto original",
-    "log_enhanced":  "Laplacian of Gaussian (Marr-Hildreth) blend",
+    "none":             "No preprocessing — raw input to models",
+    "clahe":            "Local contrast enhancement in LAB L-channel",
+    "gamma_correct":    "Gamma γ=0.6 — lifts shadow detail",
+    "sobel_overlay":    "Sobel gradient magnitude blended onto image",
+    "canny_overlay":    "Canny edge contours blended onto original",
+    "log_enhanced":     "Laplacian of Gaussian (Marr-Hildreth) blend",
+    "fft_highpass":     "Gaussian high-pass in 2D Fourier domain",
+    "fft_lowpass":      "Gaussian low-pass — smooths high-freq noise",
+    "crack_extract":    "Bilateral + morphological black-hat transform",
+    "tophat_morph":     "White top-hat — bright deposits on dark stone",
+    "gradient_morph":   "Morphological gradient — object boundaries",
+    "bilateral_denoise":"Strong bilateral — noise reduction, edge-safe",
+    "median_denoise":   "Median filter — removes salt-and-pepper noise",
+}
+
+FILTER_CATEGORIES = {
+    "none":             "Enhancement",
+    "clahe":            "Enhancement",
+    "gamma_correct":    "Enhancement",
+    "sobel_overlay":    "Edge & Structure",
+    "canny_overlay":    "Edge & Structure",
+    "log_enhanced":     "Edge & Structure",
+    "fft_highpass":     "Frequency",
+    "fft_lowpass":      "Frequency",
+    "crack_extract":    "Morphology",
+    "tophat_morph":     "Morphology",
+    "gradient_morph":   "Morphology",
+    "bilateral_denoise":"Noise Reduction",
+    "median_denoise":   "Noise Reduction",
 }
 
 
@@ -428,10 +464,91 @@ def _apply_filter(img: Image.Image, filter_name: str) -> Image.Image:
         lab[:, :, 0] = clahe.apply(lab[:, :, 0])
         out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
 
+    elif filter_name == "gamma_correct":
+        # Gamma correction γ=0.6 lifts shadow detail in dark stone surfaces
+        table = np.array([(i / 255.0) ** 0.6 * 255 for i in range(256)], dtype=np.uint8)
+        out = cv2.LUT(arr, table)
+
+    elif filter_name == "sobel_overlay":
+        # Sobel gradient magnitude (both axes) blended as warm-tinted edge overlay
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        sx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+        sy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+        mag = np.sqrt(sx ** 2 + sy ** 2)
+        mag_norm = (mag / (mag.max() + 1e-8) * 255).astype(np.uint8)
+        edge_color = np.zeros_like(arr)
+        edge_color[:, :, 0] = mag_norm
+        edge_color[:, :, 1] = (mag_norm * 0.4).astype(np.uint8)
+        blended = cv2.addWeighted(arr, 0.72, edge_color, 0.28, 0)
+        lab = cv2.cvtColor(blended, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "fft_lowpass":
+        # Gaussian low-pass in frequency domain — suppresses high-freq noise
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        L = lab[:, :, 0].astype(np.float32)
+        h, w = L.shape
+        cy, cx = h // 2, w // 2
+        fshift = np.fft.fftshift(np.fft.fft2(L))
+        Y, X = np.ogrid[:h, :w]
+        dist = np.sqrt((Y - cy) ** 2 + (X - cx) ** 2)
+        radius = min(h, w) / 5.0
+        lp_mask = np.exp(-dist ** 2 / (2 * radius ** 2))
+        L_lp = np.abs(np.fft.ifft2(np.fft.ifftshift(fshift * lp_mask)))
+        lab[:, :, 0] = np.clip(L_lp / (L_lp.max() + 1e-8) * 255, 0, 255).astype(np.uint8)
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "tophat_morph":
+        # White top-hat extracts small bright features (efflorescence, salt deposits)
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        tophat = cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, kernel)
+        tophat_3ch = cv2.cvtColor(tophat, cv2.COLOR_GRAY2RGB)
+        combined = cv2.addWeighted(arr, 0.6, tophat_3ch, 0.4, 0)
+        lab = cv2.cvtColor(combined, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        out = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    elif filter_name == "gradient_morph":
+        # Morphological gradient (dilation − erosion) highlights region boundaries
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        grad = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT, kernel)
+        grad_eq = cv2.equalizeHist(grad)
+        grad_3ch = cv2.cvtColor(grad_eq, cv2.COLOR_GRAY2RGB)
+        out = cv2.addWeighted(arr, 0.65, grad_3ch, 0.35, 0)
+
+    elif filter_name == "bilateral_denoise":
+        # Strong bilateral filter — noise reduction while preserving edges
+        out = cv2.bilateralFilter(arr, d=15, sigmaColor=100, sigmaSpace=100)
+
+    elif filter_name == "median_denoise":
+        # Median filter — removes salt-and-pepper noise, preserves edges
+        r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+        out = np.stack([cv2.medianBlur(c, 7) for c in [r, g, b]], axis=2)
+
     else:
         return img
 
     return Image.fromarray(out.astype(np.uint8))
+
+
+def _apply_pipeline(img: Image.Image, pipeline_str: str) -> Image.Image:
+    """Apply an ordered comma-separated filter pipeline to an image."""
+    names = [n.strip() for n in pipeline_str.split(",") if n.strip() and n.strip() != "none"]
+    for name in names:
+        if name in FILTER_NAMES:
+            img = _apply_filter(img, name)
+    return img
+
+
+def _pipeline_label(pipeline_str: str) -> str:
+    names = [n.strip() for n in pipeline_str.split(",") if n.strip() and n.strip() != "none"]
+    labels = [FILTER_LABELS[n] for n in names if n in FILTER_LABELS]
+    return " → ".join(labels) if labels else "Original"
 
 
 # ---------------------------------------------------------------------------
@@ -479,6 +596,7 @@ async def filter_preview(file: UploadFile = File(...)):
         previews[name] = {
             "label":       FILTER_LABELS[name],
             "description": FILTER_DESCRIPTIONS[name],
+            "category":    FILTER_CATEGORIES[name],
             "image_b64":   _pil_to_b64(filtered),
         }
 
@@ -489,12 +607,13 @@ async def filter_preview(file: UploadFile = File(...)):
 async def predict(file: UploadFile = File(...), filter_name: str = Form("none")):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
-    if filter_name not in FILTER_NAMES:
-        raise HTTPException(status_code=400, detail=f"Unknown filter: {filter_name}")
+    invalid = [n.strip() for n in filter_name.split(",") if n.strip() and n.strip() not in FILTER_NAMES]
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"Unknown filter(s): {invalid}")
 
     raw = await file.read()
     img = Image.open(io.BytesIO(raw)).convert("RGB")
-    img = _apply_filter(img, filter_name)
+    img = _apply_pipeline(img, filter_name)
 
     load_models()
 
@@ -514,7 +633,7 @@ async def predict(file: UploadFile = File(...), filter_name: str = Form("none"))
         "segmentation":   seg_res,
         "detection":      det_res,
         "surface":        surf_res,
-        "filter_applied": FILTER_LABELS[filter_name],
+        "filter_applied": _pipeline_label(filter_name),
     })
 
 
@@ -536,13 +655,14 @@ def _ssim_map(g1: np.ndarray, g2: np.ndarray) -> tuple[float, np.ndarray]:
 async def compare_images(before: UploadFile = File(...), after: UploadFile = File(...), filter_name: str = Form("none")):
     if not before.content_type.startswith("image/") or not after.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Both files must be images")
-    if filter_name not in FILTER_NAMES:
-        raise HTTPException(status_code=400, detail=f"Unknown filter: {filter_name}")
+    invalid = [n.strip() for n in filter_name.split(",") if n.strip() and n.strip() not in FILTER_NAMES]
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"Unknown filter(s): {invalid}")
 
     img_b = Image.open(io.BytesIO(await before.read())).convert("RGB")
     img_a = Image.open(io.BytesIO(await after.read())).convert("RGB")
-    img_b = _apply_filter(img_b, filter_name)
-    img_a = _apply_filter(img_a, filter_name)
+    img_b = _apply_pipeline(img_b, filter_name)
+    img_a = _apply_pipeline(img_a, filter_name)
 
     load_models()
 
@@ -578,7 +698,7 @@ async def compare_images(before: UploadFile = File(...), after: UploadFile = Fil
         "change_map_b64": change_b64,
         "ssim_score":     round(ssim_score, 3),
         "ssim_change":    round(1.0 - ssim_score, 3),
-        "filter_applied": FILTER_LABELS[filter_name],
+        "filter_applied": _pipeline_label(filter_name),
         "before": {
             "crack_pct":     seg_b["crack_pct"],
             "seg_b64":       seg_b["image_b64"],
