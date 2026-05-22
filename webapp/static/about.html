@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>About — Albanian Heritage Damage Assessment</title>
+  <title>About: Albanian Heritage Damage Assessment</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +36,7 @@
       <h1 class="text-5xl text-slate-900 mb-4">About this Project</h1>
       <p class="text-lg text-slate-500 leading-relaxed">
         A Master's research project applying deep learning to structural damage detection
-        in Albanian UNESCO World Heritage Sites — combining classification, object detection,
+        in Albanian UNESCO World Heritage Sites, combining classification, object detection,
         and semantic segmentation in a single pipeline.
       </p>
     </div>
@@ -54,9 +54,9 @@
           </div>
           <h3 class="text-lg font-semibold text-slate-800 mb-2" style="font-family:Inter,sans-serif">The Problem</h3>
           <p class="text-slate-500 text-sm leading-relaxed">
-            Albania's UNESCO-listed heritage sites — <strong class="text-slate-700">Berat</strong>,
+            Albania's UNESCO-listed heritage sites, including <strong class="text-slate-700">Berat</strong>,
             <strong class="text-slate-700">Gjirokastër</strong>, and
-            <strong class="text-slate-700">Butrint</strong> — face ongoing structural deterioration
+            <strong class="text-slate-700">Butrint</strong>, face ongoing structural deterioration
             from weathering, seismic activity, and neglect. Manual inspection is slow, expensive,
             and inconsistent. Hairline cracks that go undetected can escalate into irreversible structural failure.
           </p>
@@ -107,7 +107,7 @@
           <p class="text-slate-500 text-sm leading-relaxed">
             Performance was measured on held-out test sets with standard metrics:
             accuracy &amp; F1 for classification, mAP@50 for detection, and mIoU + Dice for segmentation.
-            Cross-dataset evaluation exposed domain gaps between pavement and heritage masonry —
+            Cross-dataset evaluation exposed domain gaps between pavement and heritage masonry,
             motivating fine-tuning on masonry-specific subsets.
           </p>
         </div>
@@ -202,11 +202,11 @@
           <ul class="space-y-2 mb-4">
             <li class="flex gap-2 text-sm">
               <span class="w-2 h-2 rounded-full bg-violet-400 mt-1.5 flex-shrink-0"></span>
-              <span class="text-slate-600"><strong class="text-slate-800">Gabor Energy</strong> — 6 orientations × 3 wavelengths. Responds strongly to crack-like elongated edges at any angle.</span>
+              <span class="text-slate-600"><strong class="text-slate-800">Gabor Energy:</strong> 6 orientations × 3 wavelengths. Responds strongly to crack-like elongated edges at any angle.</span>
             </li>
             <li class="flex gap-2 text-sm">
               <span class="w-2 h-2 rounded-full bg-violet-400 mt-1.5 flex-shrink-0"></span>
-              <span class="text-slate-600"><strong class="text-slate-800">Complexity Map</strong> — local Laplacian standard deviation. Bright regions = irregular, deteriorated surface texture.</span>
+              <span class="text-slate-600"><strong class="text-slate-800">Complexity Map:</strong> local Laplacian standard deviation. Bright regions = irregular, deteriorated surface texture.</span>
             </li>
           </ul>
           <div class="bg-violet-50 rounded-xl px-4 py-2.5 text-xs text-violet-800">
@@ -231,11 +231,11 @@
           <ul class="space-y-2 mb-4">
             <li class="flex gap-2 text-sm">
               <span class="w-2 h-2 rounded-full bg-sky-400 mt-1.5 flex-shrink-0"></span>
-              <span class="text-slate-600"><strong class="text-slate-800">SSIM Change Map</strong> — Structural Similarity Index highlights regions where luminance, contrast, or structure changed between visits.</span>
+              <span class="text-slate-600"><strong class="text-slate-800">SSIM Change Map:</strong> Structural Similarity Index highlights regions where luminance, contrast, or structure changed between visits.</span>
             </li>
             <li class="flex gap-2 text-sm">
               <span class="w-2 h-2 rounded-full bg-sky-400 mt-1.5 flex-shrink-0"></span>
-              <span class="text-slate-600"><strong class="text-slate-800">Full pipeline on both images</strong> — classification, detection, and segmentation run independently on each image, so damage extent can be compared directly.</span>
+              <span class="text-slate-600"><strong class="text-slate-800">Full pipeline on both images:</strong> classification, detection, and segmentation run independently on each image, so damage extent can be compared directly.</span>
             </li>
           </ul>
           <div class="bg-sky-50 rounded-xl px-4 py-2.5 text-xs text-sky-800">
@@ -255,7 +255,7 @@
         <div>
           <p class="text-sm font-semibold text-slate-200 mb-1">Synthetic Degradation Stages</p>
           <p class="text-slate-400 text-sm leading-relaxed">
-            A synthetic temporal pipeline generates five progressive degradation stages applied to a clean masonry image — weathering, crack seeding, crack widening, spalling, severe spalling — providing ground-truth before/after pairs for validating the comparison pipeline where real multi-date photography is unavailable.
+            A synthetic temporal pipeline generates five progressive degradation stages applied to a clean masonry image (weathering, crack seeding, crack widening, spalling, severe spalling), providing ground-truth before/after pairs for validating the comparison pipeline where real multi-date photography is unavailable.
           </p>
         </div>
       </div>
@@ -264,7 +264,7 @@
     <!-- PREPROCESSING FILTERS -->
     <section class="mb-16">
       <h2 class="text-3xl text-slate-900 mb-3">Image Preprocessing Filters</h2>
-      <p class="text-slate-500 mb-8">Before passing through the neural models, images can be enhanced using classical Digital Image Processing algorithms. Each filter is designed to reveal structural damage — cracks, spalling, surface deterioration — that may be difficult to detect in raw photographs. The same filter is applied consistently to both images in Before / After comparison mode.</p>
+      <p class="text-slate-500 mb-8">Before passing through the neural models, images can be enhanced using classical Digital Image Processing algorithms. Each filter is designed to reveal structural damage (cracks, spalling, surface deterioration) that may be difficult to detect in raw photographs. The same filter is applied consistently to both images in Before / After comparison mode.</p>
 
       <div class="grid md:grid-cols-2 gap-5 mb-6">
 
@@ -276,7 +276,7 @@
             <span class="ml-auto text-xs text-slate-400 font-medium">Histogram domain</span>
           </div>
           <p class="text-slate-500 text-sm leading-relaxed mb-2">
-            <strong class="text-slate-700">Contrast Limited Adaptive Histogram Equalization</strong> operates on the L-channel of the LAB colour space. Unlike global equalisation, CLAHE divides the image into small tiles and redistributes each tile's histogram independently — with a clip limit to prevent noise amplification. On heritage stone, where damage often hides in shadow or low-contrast regions, CLAHE is the single most effective preprocessing step.
+            <strong class="text-slate-700">Contrast Limited Adaptive Histogram Equalization</strong> operates on the L-channel of the LAB colour space. Unlike global equalisation, CLAHE divides the image into small tiles and redistributes each tile's histogram independently, with a clip limit to prevent noise amplification. On heritage stone, where damage often hides in shadow or low-contrast regions, CLAHE is the single most effective preprocessing step.
           </p>
           <div class="bg-amber-50 rounded-lg px-3 py-2 text-xs text-amber-800">clipLimit = 3.0 · tileGrid = 8 × 8 · LAB L-channel only (preserves colour)</div>
         </div>
@@ -289,7 +289,7 @@
             <span class="ml-auto text-xs text-slate-400 font-medium">Morphological ops</span>
           </div>
           <p class="text-slate-500 text-sm leading-relaxed mb-2">
-            <strong class="text-slate-700">Bilateral filtering</strong> removes high-frequency noise while preserving edge sharpness. Then the <strong class="text-slate-700">Black-Hat morphological transform</strong> — defined as close(image) − image — extracts dark thin structures against a brighter background, precisely matching the profile of cracks on weathered stone walls. The result is blended at 40% onto the denoised image, then CLAHE-enhanced.
+            <strong class="text-slate-700">Bilateral filtering</strong> removes high-frequency noise while preserving edge sharpness. Then the <strong class="text-slate-700">Black-Hat morphological transform</strong> (defined as close(image) − image) extracts dark thin structures against a brighter background, precisely matching the profile of cracks on weathered stone walls. The result is blended at 40% onto the denoised image, then CLAHE-enhanced.
           </p>
           <div class="bg-rose-50 rounded-lg px-3 py-2 text-xs text-rose-800">Bilateral(d=9, σ=75) → Black-Hat(15×15 rect kernel) → CLAHE blend</div>
         </div>
@@ -358,7 +358,7 @@
       <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
         <div class="flex items-center gap-3 mb-5">
           <span class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">1</span>
-          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Classification — EfficientNet-B4</h3>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Classification: EfficientNet-B4</h3>
           <span class="ml-auto text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">99.8% accuracy</span>
         </div>
         <div class="grid md:grid-cols-2 gap-8">
@@ -367,7 +367,7 @@
             <p class="text-slate-500 text-sm leading-relaxed">
               Classifies the entire image as <strong class="text-slate-700">Cracked</strong> or
               <strong class="text-slate-700">Intact</strong> with a confidence score.
-              Also produces a <strong class="text-slate-700">Grad-CAM heatmap</strong> — a
+              Also produces a <strong class="text-slate-700">Grad-CAM heatmap</strong>, a
               gradient-weighted activation map that highlights which image regions most influenced the decision.
             </p>
           </div>
@@ -384,7 +384,7 @@
         </div>
         <div class="mt-5 bg-blue-50 rounded-xl px-5 py-3 text-sm text-blue-800">
           <strong>Why EfficientNet-B4?</strong> Better accuracy-to-parameter ratio than ResNet50 or VGG.
-          B4 variant hits the sweet spot for 380 px inputs — large enough for crack texture, small enough for fast inference.
+          B4 variant hits the sweet spot for 380 px inputs: large enough for crack texture, small enough for fast inference.
         </div>
       </div>
 
@@ -392,7 +392,7 @@
       <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
         <div class="flex items-center gap-3 mb-5">
           <span class="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">2</span>
-          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Detection — YOLOv8s + SAHI</h3>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Detection: YOLOv8s + SAHI</h3>
           <span class="ml-auto text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">mAP@50 54.4%</span>
         </div>
         <div class="grid md:grid-cols-2 gap-8">
@@ -400,7 +400,7 @@
             <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">What it does</h4>
             <p class="text-slate-500 text-sm leading-relaxed">
               Draws bounding boxes around individual crack regions with confidence scores.
-              Provides spatial localisation — where in the structure damage is concentrated —
+              Provides spatial localisation, showing where in the structure damage is concentrated,
               which classification alone cannot give.
             </p>
           </div>
@@ -425,14 +425,14 @@
       <div class="model-card bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mb-6">
         <div class="flex items-center gap-3 mb-5">
           <span class="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">3</span>
-          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Segmentation — U-Net / ResNet34</h3>
+          <h3 class="text-xl text-slate-900" style="font-family:'Playfair Display',serif">Segmentation: U-Net / ResNet34</h3>
           <span class="ml-auto text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-semibold">mIoU 83.6%</span>
         </div>
         <div class="grid md:grid-cols-2 gap-8">
           <div>
             <h4 class="text-sm font-semibold text-slate-700 mb-2 uppercase tracking-widest">What it does</h4>
             <p class="text-slate-500 text-sm leading-relaxed">
-              Produces a pixel-level binary mask — every pixel is classified as crack or background.
+              Produces a pixel-level binary mask where every pixel is classified as crack or background.
               Reports the percentage of the surface that is cracked, giving a quantitative damage extent
               beyond what bounding boxes can express.
             </p>
@@ -449,8 +449,8 @@
           </div>
         </div>
         <div class="mt-5 bg-emerald-50 rounded-xl px-5 py-3 text-sm text-emerald-800">
-          <strong>Why U-Net?</strong> Designed for biomedical segmentation where targets are thin and sparse —
-          exactly the profile of crack pixels in masonry. Skip connections preserve edge sharpness
+          <strong>Why U-Net?</strong> Designed for biomedical segmentation where targets are thin and sparse,
+          exactly matching the profile of crack pixels in masonry. Skip connections preserve edge sharpness
           that pure encoder-decoders lose.
         </div>
       </div>
