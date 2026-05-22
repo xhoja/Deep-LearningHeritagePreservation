@@ -4,7 +4,6 @@
 > **Master's Project — Computer Vision**  
 > Motivated by the preservation of UNESCO-listed sites in Albania (Berat, Gjirokastër, Butrint)
 
----
 
 ## Deliverables Checklist
 
@@ -20,7 +19,6 @@ This repository is submitted as part of the course project requirement (45% of f
 
 > **Extra Credit (40%):** Awarded if the method and experimental results achieve state-of-the-art performance. Target benchmarks are listed in the [Evaluation](#evaluation) section.
 
----
 
 ## Overview
 
@@ -28,7 +26,6 @@ This project develops a multi-task computer vision pipeline for automated struct
 
 The central research question is **cross-dataset generalization**: can a model trained on one heritage building dataset generalize to unseen building types, crack morphologies, and lighting conditions? This mirrors established generalization benchmarks in the CV literature.
 
----
 
 ## Pipeline
 
@@ -57,7 +54,6 @@ Input Image
          Output: binary crack mask (crack / background)
 ```
 
----
 
 ## Datasets
 
@@ -71,7 +67,6 @@ Input Image
 
 Place all datasets under `data/` following the structure below.
 
----
 
 ## Project Structure
 
@@ -137,7 +132,6 @@ heritage-damage-assessment/
 └── README.md
 ```
 
----
 
 ## Setup
 
@@ -161,7 +155,6 @@ conda activate heritage-cv
 pip install -r requirements.txt
 ```
 
----
 
 ## Training
 
@@ -197,7 +190,6 @@ python train_segmentor.py \
   --output checkpoints/segmentor/
 ```
 
----
 
 ## Evaluation
 
@@ -287,7 +279,6 @@ Trained on T4 GPU (Google Colab), 150 epochs, 384×384, AMP enabled. Combined st
 
 mIoU computed as mean of crack-class IoU and background IoU — standard semantic segmentation definition. SotA target exceeded. See `notebooks/03_segmentation.ipynb` for training curves and prediction visualisations.
 
----
 
 ### Task 4 — Cross-Dataset Evaluation (`notebooks/04_cross_dataset_eval.ipynb`)
 
@@ -323,7 +314,6 @@ Model generalises better to masonry (wider cracks, stronger contrast) than Crack
 
 **Finding:** The detector shows catastrophic cross-domain collapse. OmniCrack30k images are large-scale pavement/concrete photographs; CrackForest and Masonry contain fine, structured heritage cracks at smaller scale and different texture. The model's bounding-box priors and feature responses do not transfer without adaptation — motivating Task 5.
 
----
 
 ### Task 5 — Detector Domain Adaptation (`notebooks/05_detector_finetuning.ipynb`)
 
@@ -346,7 +336,6 @@ Model generalises better to masonry (wider cracks, stronger contrast) than Crack
 
 **Report narrative:** Domain adaptation via fine-tuning on 250 heritage crack images improves mAP@50 from 8.8% to 23.6% on the combined heritage test set — a 169% relative improvement — demonstrating that adaptation is possible but difficult, highlighting the severity of the OmniCrack→heritage domain gap. This directly addresses the project's central research question on cross-dataset generalisation.
 
----
 
 ### Task 6 — Failure Analysis & Grad-CAM++ (`notebooks/06_failure_analysis.ipynb`)
 
@@ -419,7 +408,6 @@ Best/worst IoU visualisations use semi-transparent error overlays on the origina
 
 The 20% agreement rate is mathematically expected: the classifier labels ~20% of images as cracked; the detector fires on 100%; they agree only on the cracked subset. Type B = 0 is the important result — every image the classifier calls cracked, the detector also fires on, meaning the two models are fully consistent on positive cases.
 
----
 
 ### Task 7 — SAHI Sliced Inference Evaluation (`notebooks/07_sahi_evaluation.ipynb`)
 
@@ -435,7 +423,6 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 
 **Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
 
----
 
 ### Task 10 — Multi-Class Damage Detector on DACL10k (`notebooks/10_dacl10k_detector.ipynb`)
 
@@ -474,7 +461,6 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 4. **dacl10k is a known hard benchmark** — irregular damage morphology, heavy class imbalance (spalling 40% of boxes), real-world annotation noise from polygon→bbox conversion.
 5. **Multi-class value:** enables per-damage-type localisation unavailable from the single-class model — directly supports heritage condition mapping with specific deterioration labels.
 
----
 
 ### Task 1b — Classifier Domain Adaptation (`notebooks/08_classifier_finetuning.ipynb`)
 
@@ -493,7 +479,6 @@ The 20% agreement rate is mathematically expected: the classifier labels ~20% of
 2. **In-distribution performance preserved** — combined test acc 95.2% → 99.4%, historical_crack performance essentially unchanged.
 3. **GradCAM attention shifts** — post fine-tuning, the model attends to crack edges and branching structures in masonry images rather than irrelevant background textures.
 
----
 
 ### Task 9 — Synthetic Temporal Degradation Analysis (`notebooks/09_degradation_analysis.ipynb`)
 
@@ -535,7 +520,6 @@ Score = 0.25·(1−SSIM) + 0.25·ΔGabor + 0.25·Δentropy + 0.25·GLCM\_contras
 
 **Runtime:** CPU-only, ~8–10 min on T4 Colab.
 
----
 
 ## Web Application
 
@@ -596,7 +580,6 @@ Synthetic degradation examples from notebook 09 (`deg_s0_r0.jpg` → `deg_s3_r0.
 
 > **Note on classifier vs. detector/segmentor agreement:** The classifier operates on global image statistics and is more sensitive to domain shift than the detector/segmentor, which share spatial-feature inductive biases. The severity card surfaces this disagreement explicitly (X/3 models agree) rather than hiding it behind a single score.
 
----
 
 ## Validation Samples
 
@@ -608,7 +591,6 @@ The `samples/` directory contains representative test images for quick pipeline 
 
 See `samples/README.md` for per-image descriptions.
 
----
 
 ## References
 
@@ -632,7 +614,6 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - Dais et al. (2021). *Automatic crack classification and segmentation on masonry surfaces using CNNs and transfer learning.* Automation in Construction. — dataset and masonry-specific methods.
 - Mishra & Lourenço (2024). *Deep learning and computer vision for damage detection in cultural heritage structures.* Journal of Cultural Heritage. — domain survey.
 
----
 
 ## Roadmap
 
@@ -657,7 +638,6 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [ ] Write project report (`report/report.pdf`)
 - [ ] Write article reading survey (`report/article_survey.pdf`)
 
----
 
 ## Author
 
