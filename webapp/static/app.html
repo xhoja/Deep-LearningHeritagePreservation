@@ -542,6 +542,13 @@
         </div>
         <div id="cmp-filter-tabs" class="cat-tabs"></div>
         <div id="cmp-filter-grid" class="grid grid-cols-3 gap-2"></div>
+        <div id="cfd-side-toggle" class="hidden flex items-center gap-1.5 mb-2">
+          <span class="text-xs text-slate-400 font-medium">Preview:</span>
+          <button id="cfd-before-btn" onclick="setCmpDiffSide('before')"
+                  class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white">Before</button>
+          <button id="cfd-after-btn" onclick="setCmpDiffSide('after')"
+                  class="px-2 py-0.5 rounded text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200">After</button>
+        </div>
         <div id="cmp-filter-diff" class="filter-diff"
              onmouseenter="cancelHideDiff()" onmouseleave="hideDiff('cmp')">
           <div class="diff-original"><img id="cfd-orig" src="" alt="Original"/></div>
@@ -671,6 +678,7 @@
     let filterPreviews     = {};   // { name: { label, category, image_b64 } }
     let activeFilterCat    = 'All';
     let activeCmpFilterCat = 'All';
+    let cmpDiffSide        = 'before';
     const MAX_PIPELINE     = 3;
     const VIEW_META  = {
       cam:     { caption: 'Grad-CAM: red regions drove the classification decision' },
@@ -884,12 +892,16 @@
       if (panel === 'main' && selectedIdx >= 0 && queue[selectedIdx]) {
         origSrc = queue[selectedIdx].objectUrl;
       } else if (panel === 'cmp') {
-        const beforeUrl = document.getElementById('cmp-before-preview')?.src || '';
-        origSrc = beforeUrl;
+        const side = cmpDiffSide === 'after' ? 'after' : 'before';
+        origSrc = document.getElementById('cmp-' + side + '-preview')?.src || '';
       }
 
-      // Filtered b64 is inside the card's <img>
-      const filtSrc = cardEl.querySelector('img')?.src || '';
+      // Filtered b64 from appropriate previews object (cmp) or card thumbnail (main)
+      let filtSrc = cardEl.querySelector('img')?.src || '';
+      if (panel === 'cmp' && cmpDiffSide === 'after') {
+        const b64 = cmpAfterPreviews[name]?.image_b64;
+        if (b64) filtSrc = 'data:image/jpeg;base64,' + b64;
+      }
 
       document.getElementById(ids.orig).src = origSrc;
       document.getElementById(ids.filt).src = filtSrc;
@@ -954,6 +966,7 @@
     // ── Compare filter panel ───────────────────────────────────────────────
     let cmpSelectedFilters = [];
     let cmpFilterPreviews  = {};
+    let cmpAfterPreviews   = {};
 
     async function loadCmpFilterPreviews(file) {
       document.getElementById('cmp-filter-panel').classList.remove('hidden');
@@ -972,6 +985,30 @@
       } finally {
         document.getElementById('cmp-filter-spinner').classList.add('hidden');
       }
+    }
+
+    async function loadCmpAfterPreviews(file) {
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res  = await fetch('/filter-preview', { method: 'POST', body: form });
+        const data = await res.json();
+        cmpAfterPreviews = data.filters;
+        document.getElementById('cfd-side-toggle').classList.remove('hidden');
+      } catch(e) {
+        console.error('Compare after filter preview failed:', e);
+      }
+    }
+
+    function setCmpDiffSide(side) {
+      cmpDiffSide = side;
+      document.getElementById('cfd-before-btn').className =
+        'px-2 py-0.5 rounded text-xs font-semibold ' +
+        (side === 'before' ? 'bg-blue-500 text-white' : 'text-slate-500 bg-slate-100 hover:bg-slate-200');
+      document.getElementById('cfd-after-btn').className =
+        'px-2 py-0.5 rounded text-xs font-semibold ' +
+        (side === 'after' ? 'bg-blue-500 text-white' : 'text-slate-500 bg-slate-100 hover:bg-slate-200');
+      document.getElementById('cmp-filter-diff').classList.remove('open');
     }
 
     function cmpFilterCardHTML(name, f, selFilters) {
@@ -1466,6 +1503,7 @@
       document.getElementById('cmp-' + side + '-clear').classList.remove('hidden');
       updateCompareBtn();
       if (side === 'before' && !Object.keys(cmpFilterPreviews).length) loadCmpFilterPreviews(file);
+      if (side === 'after') loadCmpAfterPreviews(file);
     }
 
     function clearCmpFile(side) {
@@ -1476,9 +1514,18 @@
       if (side === 'before') {
         cmpSelectedFilters = [];
         cmpFilterPreviews  = {};
+        cmpAfterPreviews   = {};
+        cmpDiffSide        = 'before';
         document.getElementById('cmp-filter-panel').classList.add('hidden');
         document.getElementById('cmp-filter-grid').innerHTML = '';
         document.getElementById('cmp-filter-pipeline').classList.add('hidden');
+        document.getElementById('cfd-side-toggle').classList.add('hidden');
+      }
+      if (side === 'after') {
+        cmpAfterPreviews = {};
+        document.getElementById('cfd-side-toggle').classList.add('hidden');
+        document.getElementById('cmp-filter-diff').classList.remove('open');
+        setCmpDiffSide('before');
       }
       updateCompareBtn();
     }
