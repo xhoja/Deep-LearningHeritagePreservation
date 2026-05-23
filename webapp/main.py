@@ -709,6 +709,7 @@ async def compare_images(before: UploadFile = File(...), after: UploadFile = Fil
             "seg_b64":       seg_a["image_b64"],
             "texture_score": surf_a["texture_score"],
             "label":         cls_a["label"],
+            "cracked_pct":   cls_a["cracked_pct"],
             "cam_b64":       cls_a["cam_b64"],
         },
     })

@@ -588,8 +588,25 @@
               <span id="cmp-ssim-change-pct" class="font-bold text-slate-800 text-lg tabular-nums"></span>
             </div>
           </div>
-          <img id="cmp-ssim-img" src="" alt="SSIM change map" class="result-img mb-2"/>
+          <img id="cmp-ssim-img" src="" alt="SSIM change map" class="result-img mb-2" style="max-height:18rem"/>
           <p class="text-xs text-slate-400">Bright pixels = greatest structural change between the two images</p>
+        </div>
+
+        <!-- Classification of After image -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6 fade-up">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="font-semibold text-slate-700">Classification (After)</span>
+            <span class="ml-auto text-xs text-slate-400">EfficientNet-B4</span>
+          </div>
+          <div class="flex items-baseline gap-4 mb-3">
+            <div id="cmp-cls-label" class="text-3xl font-bold"></div>
+            <div class="text-right ml-auto">
+              <div class="text-xs text-slate-400 mb-0.5">Cracked</div>
+              <span id="cmp-cls-cracked-pct" class="font-bold text-slate-800 text-lg tabular-nums"></span>
+            </div>
+          </div>
+          <img id="cmp-cls-cam" src="" alt="Grad-CAM" class="result-img" style="max-height:16rem"/>
+          <p class="text-xs text-slate-400 mt-2">Grad-CAM: red regions drove the classification decision</p>
         </div>
 
         <!-- Before / After segmentation panels -->
@@ -1579,6 +1596,12 @@
 
       document.getElementById('cmp-ssim-img').src = 'data:image/jpeg;base64,' + change_map_b64;
       document.getElementById('cmp-ssim-change-pct').textContent = (ssim_change * 100).toFixed(1) + '%';
+
+      const clsLabel = document.getElementById('cmp-cls-label');
+      clsLabel.textContent = aft.label;
+      clsLabel.className = 'text-3xl font-bold ' + (aft.label === 'Cracked' ? 'text-red-600' : 'text-emerald-600');
+      document.getElementById('cmp-cls-cracked-pct').textContent = aft.cracked_pct.toFixed(1) + '%';
+      document.getElementById('cmp-cls-cam').src = 'data:image/jpeg;base64,' + aft.cam_b64;
 
       document.getElementById('cmp-seg-before-img').src = 'data:image/jpeg;base64,' + bef.seg_b64;
       document.getElementById('cmp-seg-after-img').src  = 'data:image/jpeg;base64,' + aft.seg_b64;
