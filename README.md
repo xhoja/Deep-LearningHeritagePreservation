@@ -11,11 +11,11 @@ This repository is submitted as part of the course project requirement (45% of f
 
 | Deliverable | Location | Status |
 |---|---|---|
-| Project report (intro, methods, experiments, results, conclusions) | `report/report.pdf` | [ ] |
-| Article reading survey + article list | `report/article_survey.pdf` | [ ] |
-| Project code | `src/` | [ ] |
+| Project report (intro, methods, experiments, results, conclusions) | `report/report.pdf` | [x] |
+| Article reading survey + article list | `report/article_survey.pdf` | [x] |
+| Project code | `src/` | [x] |
 | README document | `README.md` (this file) | [x] |
-| Testing samples for validation | `samples/` | [ ] |
+| Testing samples for validation | `samples/` | [x] |
 
 > **Extra Credit (40%):** Awarded if the method and experimental results achieve state-of-the-art performance. Target benchmarks are listed in the [Evaluation](#evaluation) section.
 
@@ -635,8 +635,9 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Webapp: Synthetic degradation examples integrated into upload panel (nb09 stages 0–3)
 - [x] Webapp: Image preprocessing filter panel — 6 classical CV filters (CLAHE, Black-Hat/Crack Extract, FFT High-Pass, Canny Overlay, LoG Enhanced) with academic descriptions; applied before all models; available in both single and compare modes
 - [x] About page: full academic documentation of pipeline, degradation analysis, and preprocessing filter theory
-- [ ] Write project report (`report/report.pdf`)
-- [ ] Write article reading survey (`report/article_survey.pdf`)
+- [x] Write project report (`report/report.pdf`)
+- [x] Write article reading survey (`report/article_survey.pdf`)
+- [ ] PowerPoint presentation
 
 
 ## Author
