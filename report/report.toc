@@ -16,13 +16,13 @@
 \contentsline {subsection}{\numberline {3.5}OmniCrack30k (Detection)}{10}{subsection.3.5}%
 \contentsline {subsection}{\numberline {3.6}DACL10k v2 (Multi-Class Detection)}{10}{subsection.3.6}%
 \contentsline {section}{\numberline {4}Pipeline Overview}{11}{section.4}%
-\contentsline {section}{\numberline {5}Methods}{12}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Task 1: Damage Classification}{12}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}Architecture: EfficientNet-B4}{12}{subsubsection.5.1.1}%
+\contentsline {section}{\numberline {5}Methods}{11}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Task 1: Damage Classification}{11}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Architecture: EfficientNet-B4}{11}{subsubsection.5.1.1}%
 \contentsline {subsubsection}{\numberline {5.1.2}Training Protocol}{12}{subsubsection.5.1.2}%
 \contentsline {subsection}{\numberline {5.2}Task 2: Crack Detection}{12}{subsection.5.2}%
 \contentsline {subsubsection}{\numberline {5.2.1}Architecture: YOLOv8s}{12}{subsubsection.5.2.1}%
-\contentsline {subsubsection}{\numberline {5.2.2}Training on OmniCrack30k}{13}{subsubsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.2}Training on OmniCrack30k}{12}{subsubsection.5.2.2}%
 \contentsline {subsubsection}{\numberline {5.2.3}Heritage Domain Adaptation (Task 5)}{13}{subsubsection.5.2.3}%
 \contentsline {subsection}{\numberline {5.3}Task 3: Semantic Segmentation}{13}{subsection.5.3}%
 \contentsline {subsubsection}{\numberline {5.3.1}Architecture: U-Net with ResNet34 Encoder}{13}{subsubsection.5.3.1}%
@@ -34,46 +34,46 @@
 \contentsline {subsection}{\numberline {6.2}Task 2: Detection Results}{15}{subsection.6.2}%
 \contentsline {subsection}{\numberline {6.3}Task 3: Segmentation Results}{16}{subsection.6.3}%
 \contentsline {subsection}{\numberline {6.4}Cross-Dataset Evaluation}{17}{subsection.6.4}%
-\contentsline {section}{\numberline {7}Domain Adaptation}{19}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{19}{subsection.7.1}%
-\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{19}{subsubsection.7.1.1}%
-\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{19}{subsubsection.7.1.2}%
-\contentsline {subsubsection}{\numberline {7.1.3}Results}{19}{subsubsection.7.1.3}%
-\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{20}{subsubsection.7.1.4}%
-\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{20}{subsection.7.2}%
-\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{20}{subsubsection.7.2.1}%
-\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{20}{subsubsection.7.2.2}%
-\contentsline {subsubsection}{\numberline {7.2.3}Results}{20}{subsubsection.7.2.3}%
-\contentsline {section}{\numberline {8}Failure Analysis}{21}{section.8}%
-\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{21}{subsection.8.1}%
-\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{21}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{22}{subsection.8.3}%
-\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{22}{subsection.8.4}%
-\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{23}{subsection.8.5}%
-\contentsline {section}{\numberline {9}Additional Experiments}{24}{section.9}%
-\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{24}{subsection.9.1}%
-\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{24}{subsubsection.9.1.1}%
-\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{24}{subsubsection.9.1.2}%
-\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{25}{subsection.9.2}%
-\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{25}{subsubsection.9.2.1}%
-\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{25}{subsubsection.9.2.2}%
-\contentsline {subsubsection}{\numberline {9.2.3}Results}{25}{subsubsection.9.2.3}%
-\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{26}{subsection.9.3}%
-\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{26}{subsubsection.9.3.1}%
-\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{26}{subsubsection.9.3.2}%
-\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{27}{subsubsection.9.3.3}%
-\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{27}{subsubsection.9.3.4}%
-\contentsline {section}{\numberline {10}Web Application}{29}{section.10}%
-\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{29}{subsection.10.1}%
-\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{29}{subsection.10.2}%
-\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{30}{subsection.10.3}%
-\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{30}{subsection.10.4}%
-\contentsline {section}{\numberline {11}Discussion}{31}{section.11}%
-\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{31}{subsection.11.1}%
-\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{31}{subsection.11.2}%
-\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{32}{subsection.11.3}%
-\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{32}{subsection.11.4}%
-\contentsline {subsection}{\numberline {11.5}Limitations}{32}{subsection.11.5}%
-\contentsline {section}{\numberline {12}Conclusions}{33}{section.12}%
-\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{35}{appendix.A}%
-\contentsline {section}{\numberline {B}Software Environment}{35}{appendix.B}%
+\contentsline {section}{\numberline {7}Domain Adaptation}{18}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{18}{subsection.7.1}%
+\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{18}{subsubsection.7.1.1}%
+\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{18}{subsubsection.7.1.2}%
+\contentsline {subsubsection}{\numberline {7.1.3}Results}{18}{subsubsection.7.1.3}%
+\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{19}{subsubsection.7.1.4}%
+\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{19}{subsection.7.2}%
+\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{19}{subsubsection.7.2.1}%
+\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{19}{subsubsection.7.2.2}%
+\contentsline {subsubsection}{\numberline {7.2.3}Results}{19}{subsubsection.7.2.3}%
+\contentsline {section}{\numberline {8}Failure Analysis}{20}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{20}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{20}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{21}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{21}{subsection.8.4}%
+\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{22}{subsection.8.5}%
+\contentsline {section}{\numberline {9}Additional Experiments}{23}{section.9}%
+\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{23}{subsection.9.1}%
+\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{23}{subsubsection.9.1.1}%
+\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{23}{subsubsection.9.1.2}%
+\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{24}{subsection.9.2}%
+\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{24}{subsubsection.9.2.1}%
+\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{24}{subsubsection.9.2.2}%
+\contentsline {subsubsection}{\numberline {9.2.3}Results}{24}{subsubsection.9.2.3}%
+\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{25}{subsection.9.3}%
+\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{25}{subsubsection.9.3.1}%
+\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{25}{subsubsection.9.3.2}%
+\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{26}{subsubsection.9.3.3}%
+\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{26}{subsubsection.9.3.4}%
+\contentsline {section}{\numberline {10}Web Application}{28}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{28}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{28}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{29}{subsection.10.3}%
+\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{29}{subsection.10.4}%
+\contentsline {section}{\numberline {11}Discussion}{30}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{30}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{30}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{31}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{31}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Limitations}{31}{subsection.11.5}%
+\contentsline {section}{\numberline {12}Conclusions}{32}{section.12}%
+\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{34}{appendix.A}%
+\contentsline {section}{\numberline {B}Software Environment}{34}{appendix.B}%

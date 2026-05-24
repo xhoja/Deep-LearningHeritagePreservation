@@ -60,7 +60,7 @@
   \small Master's in Artificial Intelligence \& Data Science\\
   \small Computer Vision --- Semester 2, 2025--2026
 }
-\date{May 2026}
+\date{June 2026}
 
 %% ─────────────────────────────────────────────────────────────
 \begin{document}
@@ -77,6 +77,7 @@ All three models exceed their respective state-of-the-art benchmarks on in-distr
 Beyond the three primary tasks, the project includes domain adaptation via fine-tuning on heritage-specific data, Grad-CAM++ failure analysis, SAHI sliced inference evaluation, multi-class damage detection on DACL10k, classifier domain adaptation, and a physically-motivated synthetic temporal degradation analysis. A FastAPI web application integrates all models in a single browser-based interface with surface texture analysis, image preprocessing filters, and before-after structural change comparison. Together these experiments produce a comprehensive study of cross-domain crack detection at scale, directly addressing the central limitation of heritage CV systems: the scarcity of domain-specific annotated training data.
 \end{abstract}
 
+\newpage
 \tableofcontents
 \newpage
 
@@ -243,7 +244,6 @@ The classifier gate provides two benefits. First, it reduces unnecessary computa
 In the web application, all three models and the surface texture analysis module run in parallel using a thread pool, so the sequential logical chain does not result in sequential latency for the user.
 
 %% ════════════════════════════════════════════════════════════
-\clearpage
 \section{Methods}
 %% ════════════════════════════════════════════════════════════
 
@@ -427,7 +427,7 @@ The mIoU of 83.56\% exceeds the 80\% benchmark. The asymmetry between crack IoU 
 
 The Focal+Tversky loss combination is critical to this result. An ablation comparison using standard binary cross-entropy achieves approximately 78.7\% mIoU and 72.4\% crack IoU on the same split, confirming that loss design accounts for approximately 5 pp of the mIoU gap.
 
-\needspace{6\baselineskip}
+\clearpage
 \subsection{Cross-Dataset Evaluation}
 \label{sec:cross_dataset}
 
@@ -438,21 +438,24 @@ Each trained model is evaluated on datasets it was not trained on to directly me
 \caption{Cross-dataset generalisation results. Each model is evaluated on one or more datasets not used during training. Classifier metric: cracked-class recall. Segmentor metric: 2-class mIoU. Detector metric: mAP@50.}
 \label{tab:cross_eval}
 \rowcolors{2}{lightgray}{white}
-\begin{tabular}{p{3.5cm}p{3.0cm}p{2.5cm}cc}
+\begin{tabular}{p{4.0cm}p{4.0cm}lc}
 \toprule
 \rowcolor{white}
-\textbf{Model} & \textbf{Test Domain} & \textbf{Split Type} & \textbf{Metric} & \textbf{Value} \\
+\textbf{Test Domain} & \textbf{Split Type} & \textbf{Metric} & \textbf{Value} \\
 \midrule
-\multirow{3}{3.5cm}{Classifier (EfficientNet-B4)} & HistoricalCrack & In-distribution & Recall & 99.83\% \\
- & CrackForest & Out-of-distribution & Recall & 89.83\% \\
- & Masonry & Out-of-distribution & Recall & 76.67\% \\
+\rowcolor{white}\multicolumn{4}{l}{\textit{Classifier (EfficientNet-B4)}} \\
+HistoricalCrack & In-distribution & Recall & 99.83\% \\
+CrackForest & Out-of-distribution & Recall & 89.83\% \\
+Masonry & Out-of-distribution & Recall & 76.67\% \\
 \midrule
-\multirow{2}{3.5cm}{Segmentor (U-Net / ResNet34)} & CrackForest subset & In-distribution & mIoU & 73.61\% \\
- & Masonry subset & In-distribution & mIoU & 86.92\% \\
+\rowcolor{white}\multicolumn{4}{l}{\textit{Segmentor (U-Net / ResNet34)}} \\
+CrackForest subset & In-distribution & mIoU & 73.61\% \\
+Masonry subset & In-distribution & mIoU & 86.92\% \\
 \midrule
-\multirow{3}{3.5cm}{Detector (YOLOv8s)} & OmniCrack30k test & In-distribution & mAP@50 & 34.59\% \\
- & CrackForest & Out-of-distribution & mAP@50 & 4.76\% \\
- & Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
+\rowcolor{white}\multicolumn{4}{l}{\textit{Detector (YOLOv8s)}} \\
+OmniCrack30k test & In-distribution & mAP@50 & 34.59\% \\
+CrackForest & Out-of-distribution & mAP@50 & 4.76\% \\
+Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
 \bottomrule
 \end{tabular}
 \end{table}
