@@ -1,6 +1,7 @@
 """
 Heritage Damage Assessment — Gradio web app
-Classifier (EfficientNet-B4) + Detector (YOLOv8s) + Segmentor (U-Net/ResNet34)
+Classifier (EfficientNet-B4) + Detector (YOLOv8l) + Segmentor (MAnet/mit_b2, 3-phase progressive training)
+Final: Crack IoU 96.23% | mIoU 85.67% | Dice 98.08%
 """
 
 from __future__ import annotations
