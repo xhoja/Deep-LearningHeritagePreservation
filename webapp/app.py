@@ -1,6 +1,6 @@
 """
 Heritage Damage Assessment — Gradio web app
-Classifier (EfficientNet-B4) + Detector (YOLOv8s) + Segmentor (U-Net/ResNet34)
+Classifier (EfficientNet-B4) + Detector (YOLOv8s) + Segmentor (MAnet/mit_b2)
 """
 
 from __future__ import annotations
@@ -71,8 +71,8 @@ def _build_classifier() -> nn.Module:
 
 
 def _build_segmentor() -> nn.Module:
-    return smp.Unet(
-        encoder_name="resnet34",
+    return smp.MAnet(
+        encoder_name="mit_b2",
         encoder_weights=None,
         in_channels=3,
         classes=1,
@@ -144,9 +144,24 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
 def _segment(pil_img: Image.Image) -> Image.Image:
     orig_w, orig_h = pil_img.size
     tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
+    model = _models["seg"]
+    model.eval()
+
+    # 4-way TTA: original + H-flip + V-flip + 90° rotation, average predictions
     with torch.no_grad():
-        logit = _models["seg"](tensor)
-    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.5).astype(np.uint8)
+        preds = [
+            torch.sigmoid(model(tensor)),
+            torch.flip(torch.sigmoid(model(torch.flip(tensor, [3]))), [3]),
+            torch.flip(torch.sigmoid(model(torch.flip(tensor, [2]))), [2]),
+            torch.rot90(torch.sigmoid(model(torch.rot90(tensor, 1, [2, 3]))), -1, [2, 3]),
+        ]
+        prob = torch.mean(torch.stack(preds), dim=0).squeeze().cpu().numpy()
+
+    # Apply optimal threshold (0.60) found during validation
+    mask = (prob > 0.60).astype(np.uint8)
+    # Morphological closing: connect broken crack segments (3×3 ellipse kernel)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     # Resize mask back to original resolution
     mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
     # Colour overlay
