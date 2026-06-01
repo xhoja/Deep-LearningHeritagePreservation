@@ -258,7 +258,7 @@ BADGE_ROW = """
 <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin: 8px 0 20px 0; font-size:0.85rem; color:#444;">
   <span>🔍 <strong>Classification</strong> — EfficientNet-B4 &nbsp;|&nbsp; 99.8% accuracy</span>
   <span>📦 <strong>Detection</strong> — YOLOv8s &nbsp;|&nbsp; mAP@50 = 96.7%</span>
-  <span>🗺 <strong>Segmentation</strong> — U-Net/ResNet34 &nbsp;|&nbsp; mIoU = 83.6%</span>
+  <span>🗺 <strong>Segmentation</strong> — MAnet/mit_b2 &nbsp;|&nbsp; Crack IoU = 96.2%</span>
 </div>
 """
 
