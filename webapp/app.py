@@ -38,6 +38,7 @@ SEG_CKPT  = MODELS_DIR / "segmentor_best.pth"
 DET_CKPT  = MODELS_DIR / "detector_best.pt"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_CLAHE = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
 # ---------------------------------------------------------------------------
 # Preprocessing constants (ImageNet)
@@ -144,6 +145,12 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
 
 def _segment(pil_img: Image.Image) -> Image.Image:
     orig_w, orig_h = pil_img.size
+    # LAB+CLAHE preprocessing (match training)
+    img_arr = np.array(pil_img.convert("RGB"))
+    lab = cv2.cvtColor(img_arr, cv2.COLOR_RGB2LAB)
+    lab[..., 0] = _CLAHE.apply(lab[..., 0])
+    img_arr = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+    pil_img = Image.fromarray(img_arr)
     tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         logit = _models["seg"](tensor)
