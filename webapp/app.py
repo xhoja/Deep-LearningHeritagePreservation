@@ -199,12 +199,14 @@ def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
                 (x1, max(y1 - 5, 12)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, CRACK_COLOR, 1, cv2.LINE_AA,
             )
-        return Image.fromarray(annotated), len(result.object_prediction_list)
+        boxes = [[obj.bbox.minx, obj.bbox.miny, obj.bbox.maxx, obj.bbox.maxy] for obj in result.object_prediction_list]
+    return Image.fromarray(annotated), len(result.object_prediction_list), boxes
 
     # Fallback: plain YOLO
     results = _models["det"].predict(img_arr, device=DEVICE, verbose=False, conf=0.25)
     annotated = cv2.cvtColor(results[0].plot(line_width=2), cv2.COLOR_BGR2RGB)
-    return Image.fromarray(annotated), len(results[0].boxes)
+    boxes = [box.xyxy[0].cpu().numpy().tolist() for box in results[0].boxes]
+    return Image.fromarray(annotated), len(results[0].boxes), boxes
 
 
 # ---------------------------------------------------------------------------
@@ -232,27 +234,11 @@ def predict(image: Image.Image):
     )
 
     # Detection
-    det_img, n_boxes = _detect(image)
+    det_img, n_boxes, det_boxes = _detect(image)
     det_caption = f"{n_boxes} crack region(s) detected" if n_boxes else "No cracks detected"
 
-    # Segmentation (constrained to detection boxes)
-    det_boxes = []
-    img_arr = np.array(image)
-    if _SAHI_OK and _models.get("det"):
-        try:
-            result = get_sliced_prediction(img_arr, _models["det"], slice_height=256, slice_width=256)
-            for obj in result.object_prediction_list:
-                bbox = obj.bbox.to_coco_bbox()
-                det_boxes.append([bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h])
-        except:
-            pass
-    else:
-        results = _models["det"].predict(img_arr, device=DEVICE, verbose=False, conf=0.25)
-        for box in results[0].boxes:
-            coords = box.xyxy[0].cpu().numpy()
-            det_boxes.append(coords.tolist())
-    
-    seg_img, crack_pct = _segment(image, det_boxes if det_boxes else None)
+    # Segmentation uses detection boxes
+    seg_img, crack_pct = _segment(image, det_boxes)
     seg_caption = f"Crack coverage: {crack_pct:.1f}% of image area"
 
     return cls_text, cls_conf, det_img, det_caption, seg_img, seg_caption
