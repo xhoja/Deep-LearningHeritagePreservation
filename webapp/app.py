@@ -72,8 +72,8 @@ def _build_classifier() -> nn.Module:
 
 
 def _build_segmentor() -> nn.Module:
-    return smp.Unet(
-        encoder_name="resnet34",
+    return smp.MAnet(
+        encoder_name="mit_b2",
         encoder_weights=None,
         in_channels=3,
         classes=1,
