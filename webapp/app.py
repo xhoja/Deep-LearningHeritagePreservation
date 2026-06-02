@@ -145,37 +145,13 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
 
 def _segment(pil_img: Image.Image, det_boxes: list = None) -> Image.Image:
     orig_w, orig_h = pil_img.size
-    # LAB+CLAHE preprocessing (match training)
-    img_arr = np.array(pil_img.convert("RGB"))
-    lab = cv2.cvtColor(img_arr, cv2.COLOR_RGB2LAB)
-    lab[..., 0] = _CLAHE.apply(lab[..., 0])
-    img_arr = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
-    pil_img_proc = Image.fromarray(img_arr)
-    tensor = seg_transform(pil_img_proc).unsqueeze(0).to(DEVICE)
+    # Plain RGB, no preprocessing
+    tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         logit = _models["seg"](tensor)
-    # Lower threshold (0.5) + morphological filtering
-    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.5).astype(np.uint8)
-    # Morphological closing to fill small gaps
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    # Remove small components (noise)
-    nlabels, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
-    mask_filtered = np.zeros_like(mask)
-    for i in range(1, nlabels):
-        if stats[i, cv2.CC_STAT_AREA] >= 100:  # Min 100 pixels
-            mask_filtered[labels == i] = 1
-    mask_full = cv2.resize(mask_filtered, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
-    
-    # Constrain to detection boxes if available
-    if det_boxes:
-        mask_constrained = np.zeros_like(mask_full)
-        for box in det_boxes:
-            x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-            x1, x2 = max(0, x1), min(orig_w, x2)
-            y1, y2 = max(0, y1), min(orig_h, y2)
-            mask_constrained[y1:y2, x1:x2] |= mask_full[y1:y2, x1:x2]
-        mask_full = mask_constrained
+    # VERY low threshold (0.1) to test
+    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.1).astype(np.uint8)
+    mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
     
     # Colour overlay
     img_arr = np.array(pil_img.convert("RGB"))
@@ -184,12 +160,10 @@ def _segment(pil_img: Image.Image, det_boxes: list = None) -> Image.Image:
         overlay[mask_full == 1] * 0.45
         + np.array(CRACK_COLOR) * 0.55
     ).astype(np.uint8)
-    # Draw mask contours for cleaner boundary
     contours, _ = cv2.findContours(mask_full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(overlay, contours, -1, CRACK_COLOR, 2)
     crack_pct = float(mask_full.mean() * 100)
     return Image.fromarray(overlay), crack_pct
-
 
 def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
     img_arr = np.array(pil_img.convert("RGB"))
