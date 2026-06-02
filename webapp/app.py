@@ -143,20 +143,40 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
     return label, confidences
 
 
-def _segment(pil_img: Image.Image) -> Image.Image:
+def _segment(pil_img: Image.Image, det_boxes: list = None) -> Image.Image:
     orig_w, orig_h = pil_img.size
     # LAB+CLAHE preprocessing (match training)
     img_arr = np.array(pil_img.convert("RGB"))
     lab = cv2.cvtColor(img_arr, cv2.COLOR_RGB2LAB)
     lab[..., 0] = _CLAHE.apply(lab[..., 0])
     img_arr = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
-    pil_img = Image.fromarray(img_arr)
-    tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
+    pil_img_proc = Image.fromarray(img_arr)
+    tensor = seg_transform(pil_img_proc).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         logit = _models["seg"](tensor)
-    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.70).astype(np.uint8)
-    # Resize mask back to original resolution
-    mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
+    # Lower threshold (0.5) + morphological filtering
+    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.5).astype(np.uint8)
+    # Morphological closing to fill small gaps
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    # Remove small components (noise)
+    nlabels, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
+    mask_filtered = np.zeros_like(mask)
+    for i in range(1, nlabels):
+        if stats[i, cv2.CC_STAT_AREA] >= 100:  # Min 100 pixels
+            mask_filtered[labels == i] = 1
+    mask_full = cv2.resize(mask_filtered, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
+    
+    # Constrain to detection boxes if available
+    if det_boxes:
+        mask_constrained = np.zeros_like(mask_full)
+        for box in det_boxes:
+            x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+            x1, x2 = max(0, x1), min(orig_w, x2)
+            y1, y2 = max(0, y1), min(orig_h, y2)
+            mask_constrained[y1:y2, x1:x2] |= mask_full[y1:y2, x1:x2]
+        mask_full = mask_constrained
+    
     # Colour overlay
     img_arr = np.array(pil_img.convert("RGB"))
     overlay = img_arr.copy()
@@ -235,8 +255,24 @@ def predict(image: Image.Image):
     det_img, n_boxes = _detect(image)
     det_caption = f"{n_boxes} crack region(s) detected" if n_boxes else "No cracks detected"
 
-    # Segmentation
-    seg_img, crack_pct = _segment(image)
+    # Segmentation (constrained to detection boxes)
+    det_boxes = []
+    img_arr = np.array(image)
+    if _SAHI_OK and _models.get("det"):
+        try:
+            result = get_sliced_prediction(img_arr, _models["det"], slice_height=256, slice_width=256)
+            for obj in result.object_prediction_list:
+                bbox = obj.bbox.to_coco_bbox()
+                det_boxes.append([bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h])
+        except:
+            pass
+    else:
+        results = _models["det"].predict(img_arr, device=DEVICE, verbose=False, conf=0.25)
+        for box in results[0].boxes:
+            coords = box.xyxy[0].cpu().numpy()
+            det_boxes.append(coords.tolist())
+    
+    seg_img, crack_pct = _segment(image, det_boxes if det_boxes else None)
     seg_caption = f"Crack coverage: {crack_pct:.1f}% of image area"
 
     return cls_text, cls_conf, det_img, det_caption, seg_img, seg_caption
