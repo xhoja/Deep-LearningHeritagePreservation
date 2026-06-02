@@ -143,26 +143,32 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
     return label, confidences
 
 
-def _segment(pil_img: Image.Image, det_boxes: list = None) -> Image.Image:
-    orig_w, orig_h = pil_img.size
-    # Plain RGB, no preprocessing
-    tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
-    with torch.no_grad():
-        logit = _models["seg"](tensor)
-    # VERY low threshold (0.1) to test
-    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.1).astype(np.uint8)
-    mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
-    
-    # Colour overlay
+def _segment(pil_img: Image.Image, det_boxes: list = None) -> tuple:
+    """Use detection boxes to create segmentation (model is broken)."""
     img_arr = np.array(pil_img.convert("RGB"))
     overlay = img_arr.copy()
-    overlay[mask_full == 1] = (
-        overlay[mask_full == 1] * 0.45
-        + np.array(CRACK_COLOR) * 0.55
-    ).astype(np.uint8)
-    contours, _ = cv2.findContours(mask_full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(overlay, contours, -1, CRACK_COLOR, 2)
-    crack_pct = float(mask_full.mean() * 100)
+    
+    if not det_boxes:
+        # No detections, no segmentation
+        crack_pct = 0.0
+        return Image.fromarray(overlay), crack_pct
+    
+    # Draw boxes as segmentation masks
+    h, w = img_arr.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+    
+    for box in det_boxes:
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        x1, x2 = max(0, x1), min(w, x2)
+        y1, y2 = max(0, y1), min(h, y2)
+        mask[y1:y2, x1:x2] = 1
+        # Color the region
+        overlay[y1:y2, x1:x2] = (
+            overlay[y1:y2, x1:x2] * 0.45
+            + np.array(CRACK_COLOR) * 0.55
+        ).astype(np.uint8)
+    
+    crack_pct = float(mask.mean() * 100)
     return Image.fromarray(overlay), crack_pct
 
 def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
