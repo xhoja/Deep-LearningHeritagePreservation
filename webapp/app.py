@@ -147,7 +147,7 @@ def _segment(pil_img: Image.Image) -> Image.Image:
     tensor = seg_transform(pil_img).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         logit = _models["seg"](tensor)
-    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.5).astype(np.uint8)
+    mask = (torch.sigmoid(logit).squeeze().cpu().numpy() > 0.70).astype(np.uint8)
     # Resize mask back to original resolution
     mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
     # Colour overlay

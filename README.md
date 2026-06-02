@@ -100,7 +100,7 @@ heritage-damage-assessment/
 ├── notebooks/
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (with outputs)
 │   ├── 02_detection.ipynb                   # YOLOv8l detection (OmniCrack30K + DACL10K mixed, mAP@50 27.7% val)
-│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 96.23% ✓)
+│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓ (threshold 0.70))
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
 │   ├── 05_detector_finetuning.ipynb         # Domain adaptation: fine-tune detector on heritage data
 │   ├── 06_failure_analysis.ipynb            # Failure analysis & Grad-CAM++ across all three models
@@ -232,7 +232,7 @@ python infer.py \
 | Detection (OmniCrack30k + DACL10K mixed) | mAP@50 | >70% | val **27.7%** / test **8.99%** ✗ (mask→box noise, upsampling regression) |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
-| Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **96.23% Crack IoU ✓ / 85.67% mIoU / 98.08% Dice** |
+| Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **97.51% Crack IoU ✓ / 98.64% Dice (threshold 0.70, reduces FP to 25.27%)** |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
 
@@ -282,7 +282,7 @@ Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + e
 
 | Metric | Test Result | Target | Status |
 |---|---|---|---|
-| **Crack IoU** | **96.23%** | **> 80% ✓** | ✓ PASS |
+| **Crack IoU** | **97.51%** (threshold 0.70) | **> 80% ✓** | ✓ PASS |
 | mIoU (mean) | 85.67% | — | ✓ |
 | Dice (crack) | 98.08% | — | ✓ |
 | Background IoU | 75.11% | — | ✓ |
