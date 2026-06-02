@@ -46,7 +46,7 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD  = (0.229, 0.224, 0.225)
 
 CLS_SIZE = 380
-SEG_SIZE = 384
+SEG_SIZE = 512
 
 cls_transform = transforms.Compose([
     transforms.Resize((CLS_SIZE, CLS_SIZE)),
