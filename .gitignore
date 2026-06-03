@@ -47,3 +47,4 @@ logs/
 # Compiled
 *.so
 *.dylib
+notebooks/03_segmentation_backup.ipynb
