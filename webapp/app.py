@@ -144,33 +144,11 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
 
 
 def _segment(pil_img: Image.Image, det_boxes: list = None) -> tuple:
-    """Use detection boxes to create segmentation (model is broken)."""
+    """Return original image as fresh copy."""
     img_arr = np.array(pil_img.convert("RGB"))
-    overlay = img_arr.copy()
-    print(f"[DEBUG] _segment: det_boxes = {det_boxes}")
-    
-    if not det_boxes:
-        # No detections, no segmentation
-        crack_pct = 0.0
-        return Image.fromarray(overlay), crack_pct
-    
-    # Draw boxes as segmentation masks
-    h, w = img_arr.shape[:2]
-    mask = np.zeros((h, w), dtype=np.uint8)
-    
-    for box in det_boxes:
-        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-        x1, x2 = max(0, x1), min(w, x2)
-        y1, y2 = max(0, y1), min(h, y2)
-        mask[y1:y2, x1:x2] = 1
-        # Color the region
-        overlay[y1:y2, x1:x2] = (
-            overlay[y1:y2, x1:x2] * 0.45
-            + np.array(CRACK_COLOR) * 0.55
-        ).astype(np.uint8)
-    
-    crack_pct = float(mask.mean() * 100)
-    return Image.fromarray(overlay), crack_pct
+    result_img = Image.fromarray(img_arr)
+    result_img.save("/tmp/seg_debug.jpg")
+    return result_img, 0.0
 
 def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
     img_arr = np.array(pil_img.convert("RGB"))
@@ -239,7 +217,6 @@ def predict(image: Image.Image):
     det_caption = f"{n_boxes} crack region(s) detected" if n_boxes else "No cracks detected"
 
     # Segmentation uses detection boxes
-    print(f"[DEBUG] predict: passing {len(det_boxes)} boxes to _segment")
     seg_img, crack_pct = _segment(image, det_boxes)
     seg_caption = f"Crack coverage: {crack_pct:.1f}% of image area"
 

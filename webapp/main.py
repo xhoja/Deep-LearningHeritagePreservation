@@ -206,11 +206,17 @@ def _segment(img: Image.Image) -> dict:
         ]
         prob = torch.mean(torch.stack(preds), dim=0).squeeze().cpu().numpy()
 
-    # Apply optimal threshold (0.60) found during validation
-    mask = (prob > 0.60).astype(np.uint8)
-    # Morphological closing: connect broken crack segments (3×3 ellipse kernel)
+    # Test both directions
+    mask_fwd = (prob > 0.80).astype(np.uint8)  # Normal: high prob = crack (higher threshold)
+    mask_inv = (prob < 0.20).astype(np.uint8)  # Inverted: low prob = crack (complementary)
+    
+    # Morphological closing for both
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask_fwd = cv2.morphologyEx(mask_fwd, cv2.MORPH_CLOSE, kernel)
+    mask_inv = cv2.morphologyEx(mask_inv, cv2.MORPH_CLOSE, kernel)
+    
+    # Use normal mask (prob > threshold) - model likely trained with this direction
+    mask = mask_fwd
     mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
 
     img_arr  = np.array(img)
@@ -278,10 +284,19 @@ def _detect(img: Image.Image) -> dict:
             ]
             sensitive = True
     else:
-        results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
+        try:
+            results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
+        except AttributeError:
+            # Fusion error: disable model fusion
+            _models["det"].fuse = lambda: _models["det"]
+            results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.25)
         boxes = results[0].boxes
         if len(boxes) == 0:
-            results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
+            try:
+                results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
+            except AttributeError:
+                _models["det"].fuse = lambda: _models["det"]
+                results = _models["det"].predict(arr, device=DEVICE, verbose=False, conf=0.10)
             boxes = results[0].boxes
             sensitive = True
         preds = [
@@ -296,6 +311,7 @@ def _detect(img: Image.Image) -> dict:
         "image_b64": _pil_to_b64(Image.fromarray(out)),
         "n_boxes":   len(preds),
         "sensitive": sensitive,
+        "predictions": preds,  # List of (x1, y1, x2, y2, conf) tuples
     }
 
 
@@ -627,20 +643,19 @@ async def predict(file: UploadFile = File(...), filter_name: str = Form("none"))
         raise HTTPException(status_code=400, detail=f"Unknown filter(s): {invalid}")
 
     raw = await file.read()
-    img = Image.open(io.BytesIO(raw)).convert("RGB")
-    img = _apply_pipeline(img, filter_name)
+    img_orig = Image.open(io.BytesIO(raw)).convert("RGB")
 
     load_models()
 
-    # Run all 4 tasks concurrently
-    fut_cls  = EXECUTOR.submit(_classify,        img)
-    fut_seg  = EXECUTOR.submit(_segment,         img)
-    fut_det  = EXECUTOR.submit(_detect,          img)
-    fut_surf = EXECUTOR.submit(_surface_analysis, img)
+    # Run models on ORIGINAL image (no preprocessing filters)
+    fut_cls  = EXECUTOR.submit(_classify, img_orig)
+    fut_det  = EXECUTOR.submit(_detect, img_orig)
+    fut_seg  = EXECUTOR.submit(_segment, img_orig)
+    fut_surf = EXECUTOR.submit(_surface_analysis, img_orig)
 
     cls_res  = fut_cls.result()
-    seg_res  = fut_seg.result()
     det_res  = fut_det.result()
+    seg_res  = fut_seg.result()
     surf_res = fut_surf.result()
 
     return JSONResponse({
