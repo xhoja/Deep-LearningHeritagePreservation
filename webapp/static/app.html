@@ -700,17 +700,32 @@
     let stepTimers   = [];
     let currentView  = 'cam';   // 'cam' | 'gabor' | 'entropy'
     let viewImgs     = {};      // { cam, gabor, entropy } base64 srcs
-    let selectedFilters    = [];   // ordered pipeline for main panel
-    let filterPreviews     = {};   // { name: { label, category, image_b64 } }
     let activeFilterCat    = 'All';
     let activeCmpFilterCat = 'All';
     let cmpDiffSide        = 'before';
-    const MAX_PIPELINE     = 3;
+    const MAX_PIPELINE     = 5;    // 1 per category max
+    const CATEGORY_MAP = {         // map category names to keys
+      'Enhancement': 'enhancement',
+      'Edge & Structure': 'edge',
+      'Frequency': 'frequency',
+      'Morphology': 'morphology',
+      'Noise Reduction': 'noiseReduction',
+    };
     const VIEW_META  = {
       cam:     { caption: 'Grad-CAM: red regions drove the classification decision' },
       gabor:   { caption: 'Gabor energy — 6 orientations × 3 wavelengths, highlights crack-like edges' },
       entropy: { caption: 'Complexity map — local Laplacian std, bright = irregular surface texture' },
     };
+
+    // Initialize filters with one-per-category structure
+    let selectedFilters = {
+      enhancement: null,
+      edge: null,
+      frequency: null,
+      morphology: null,
+      noiseReduction: null,
+    };
+    let filterPreviews = {};   // { name: { label, category, image_b64 } }
 
     // ── View switcher ──────────────────────────────────────────────────────
     function switchView(view) {
@@ -855,20 +870,16 @@
 
     // ── Main filter panel ──────────────────────────────────────────────────
     function filterCardHTML(name, f, selFilters) {
-      const pos      = selFilters.indexOf(name);
-      const selected = pos >= 0;
+      const catKey = CATEGORY_MAP[f.category];
+      const selected = catKey && selFilters[catKey] === name;
       const isNone   = name === 'none';
-      const noneActive = selFilters.length === 0;
-      const full     = selFilters.length >= MAX_PIPELINE;
-      const muted    = full && !selected && !isNone;
+      const noneActive = Object.values(selFilters).every(v => !v);
       const badgeCls = CAT_BADGE_CLASS[f.category] || '';
-      const orderBadge = selected ? `<span class="fc-order">${pos + 1}</span>` : '';
       const onclick  = isNone ? 'clearSelectedFilters()' : `selectFilter('${name}')`;
       const onenter  = isNone ? '' : `onmouseenter="showDiff('${name}','${f.label}',this,'main')"`;
       const onleave  = isNone ? '' : `onmouseleave="hideDiff('main')"`;
-      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}${muted ? ' muted' : ''}`;
+      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}`;
       return `<div class="${cls}" onclick="${onclick}" ${onenter} ${onleave}>
-               ${orderBadge}
                <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
                <p class="fc-label">${f.label}</p>
                <p class="fc-desc">${f.description || ''}</p>
@@ -888,16 +899,35 @@
     function setFilterCat(cat) { activeFilterCat = cat; renderFilterGrid(); }
 
     function selectFilter(name) {
-      const idx = selectedFilters.indexOf(name);
-      if (idx >= 0) {
-        selectedFilters.splice(idx, 1);
-      } else if (selectedFilters.length < MAX_PIPELINE) {
-        selectedFilters.push(name);
+      const filterInfo = filterPreviews[name];
+      if (!filterInfo) return;
+
+      const catKey = CATEGORY_MAP[filterInfo.category];
+      if (!catKey) return;
+
+      // Toggle: if already selected, deselect; otherwise select (replaces any previous selection in this category)
+      if (selectedFilters[catKey] === name) {
+        selectedFilters[catKey] = null;
+      } else {
+        selectedFilters[catKey] = name;
       }
       renderFilterGrid();
     }
 
-    function clearSelectedFilters() { selectedFilters = []; renderFilterGrid(); }
+    function clearSelectedFilters() {
+      selectedFilters = {};
+      Object.keys(CATEGORY_MAP).forEach(cat => {
+        selectedFilters[CATEGORY_MAP[cat]] = null;
+      });
+      renderFilterGrid();
+    }
+
+    // Convert selected filters object to ordered array (by category order)
+    function getSelectedFilterArray(selFilters) {
+      const CAT_ORDER_KEYS = ['enhancement', 'edge', 'frequency', 'morphology', 'noiseReduction'];
+      return CAT_ORDER_KEYS.map(k => selFilters[k]).filter(f => f);
+    }
+
     function removeFromPipeline(name) { selectFilter(name); }
 
     // ── Filter diff slider ─────────────────────────────────────────────────
@@ -989,7 +1019,7 @@
     }
 
     // ── Compare filter panel ───────────────────────────────────────────────
-    let cmpSelectedFilters = [];
+    let cmpSelectedFilters = {};   // { category: filtername } — max 1 per category
     let cmpFilterPreviews  = {};
     let cmpAfterPreviews   = {};
 
@@ -1037,20 +1067,16 @@
     }
 
     function cmpFilterCardHTML(name, f, selFilters) {
-      const pos      = selFilters.indexOf(name);
-      const selected = pos >= 0;
+      const catKey = CATEGORY_MAP[f.category];
+      const selected = catKey && selFilters[catKey] === name;
       const isNone   = name === 'none';
-      const noneActive = selFilters.length === 0;
-      const full     = selFilters.length >= MAX_PIPELINE;
-      const muted    = full && !selected && !isNone;
+      const noneActive = Object.values(selFilters).every(v => !v);
       const badgeCls = CAT_BADGE_CLASS[f.category] || '';
-      const orderBadge = selected ? `<span class="fc-order">${pos + 1}</span>` : '';
       const onclick  = isNone ? 'clearCmpSelectedFilters()' : `selectCmpFilter('${name}')`;
       const onenter  = isNone ? '' : `onmouseenter="showDiff('${name}','${f.label}',this,'cmp')"`;
       const onleave  = isNone ? '' : `onmouseleave="hideDiff('cmp')"`;
-      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}${muted ? ' muted' : ''}`;
+      const cls = `filter-card${(selected || (isNone && noneActive)) ? ' selected' : ''}`;
       return `<div class="${cls}" onclick="${onclick}" ${onenter} ${onleave}>
-               ${orderBadge}
                <img src="data:image/jpeg;base64,${f.image_b64}" alt="${f.label}"/>
                <p class="fc-label">${f.label}</p>
                <p class="fc-desc">${f.description || ''}</p>
@@ -1070,16 +1096,27 @@
     function setCmpFilterCat(cat) { activeCmpFilterCat = cat; renderCmpFilterGrid(); }
 
     function selectCmpFilter(name) {
-      const idx = cmpSelectedFilters.indexOf(name);
-      if (idx >= 0) {
-        cmpSelectedFilters.splice(idx, 1);
-      } else if (cmpSelectedFilters.length < MAX_PIPELINE) {
-        cmpSelectedFilters.push(name);
+      const filterInfo = cmpFilterPreviews[name];
+      if (!filterInfo) return;
+
+      const catKey = CATEGORY_MAP[filterInfo.category];
+      if (!catKey) return;
+
+      if (cmpSelectedFilters[catKey] === name) {
+        cmpSelectedFilters[catKey] = null;
+      } else {
+        cmpSelectedFilters[catKey] = name;
       }
       renderCmpFilterGrid();
     }
 
-    function clearCmpSelectedFilters() { cmpSelectedFilters = []; renderCmpFilterGrid(); }
+    function clearCmpSelectedFilters() {
+      cmpSelectedFilters = {};
+      Object.keys(CATEGORY_MAP).forEach(cat => {
+        cmpSelectedFilters[CATEGORY_MAP[cat]] = null;
+      });
+      renderCmpFilterGrid();
+    }
     function removeFromCmpPipeline(name) { selectCmpFilter(name); }
 
     // ── Queue UI ───────────────────────────────────────────────────────────
@@ -1239,7 +1276,8 @@
 
         const form = new FormData();
         form.append('file', queue[i].file);
-        form.append('filter_name', selectedFilters.length ? selectedFilters.join(',') : 'none');
+        const filterArray = getSelectedFilterArray(selectedFilters);
+        form.append('filter_name', filterArray.length ? filterArray.join(',') : 'none');
 
         try {
           const res = await fetch('/predict', { method: 'POST', body: form });
@@ -1544,7 +1582,10 @@
       document.getElementById('cmp-' + side + '-zone').classList.remove('hidden');
       document.getElementById('cmp-' + side + '-clear').classList.add('hidden');
       if (side === 'before') {
-        cmpSelectedFilters = [];
+        cmpSelectedFilters = {};
+        Object.keys(CATEGORY_MAP).forEach(cat => {
+          cmpSelectedFilters[CATEGORY_MAP[cat]] = null;
+        });
         cmpFilterPreviews  = {};
         cmpAfterPreviews   = {};
         cmpDiffSide        = 'before';
@@ -1576,7 +1617,8 @@
       const form = new FormData();
       form.append('before', cmpFiles.before);
       form.append('after',  cmpFiles.after);
-      form.append('filter_name', cmpSelectedFilters.length ? cmpSelectedFilters.join(',') : 'none');
+      const cmpFilterArray = getSelectedFilterArray(cmpSelectedFilters);
+      form.append('filter_name', cmpFilterArray.length ? cmpFilterArray.join(',') : 'none');
 
       try {
         const res  = await fetch('/compare', { method: 'POST', body: form });
