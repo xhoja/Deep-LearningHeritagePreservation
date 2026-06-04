@@ -216,7 +216,7 @@ def _segment(img: Image.Image) -> dict:
     # DEBUG: print distribution
     print(f"DEBUG segmentation: min={seg_mask.min():.4f}, max={seg_mask.max():.4f}, mean={seg_mask.mean():.4f}")
 
-    seg_binary = (seg_mask < 0.5).astype(np.uint8) * 255
+    seg_binary = (seg_mask < 0.7).astype(np.uint8) * 255
 
     # Resize back to original size
     seg_binary_orig = cv2.resize(seg_binary, (w_orig, h_orig))
