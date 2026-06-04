@@ -757,8 +757,7 @@
       }
       renderThumbs();
       updateAnalyseBtn();
-      if (selectedIdx === -1) selectImage(0);
-      if (wasEmpty && queue.length > 0) loadFilterPreviews(queue[0].file);
+      if (selectedIdx === -1) selectImage(0);  // selectImage now loads filter previews automatically
     }
 
     // ── Filter preview ─────────────────────────────────────────────────────
@@ -1192,6 +1191,10 @@
       selectedIdx = idx;
       renderThumbs();
       updateCounter();
+      // Load filter previews for the selected image
+      if (queue[idx].file) {
+        loadFilterPreviews(queue[idx].file);
+      }
       const item = queue[idx];
       if (item.results) {
         renderResults(item.results);
@@ -1209,6 +1212,9 @@
       if (isProcessing) return;
       isProcessing = true;
       updateAnalyseBtn();
+
+      // Hide filter panel during analysis
+      document.getElementById('filter-panel').classList.add('hidden');
 
       const pendingCount = queue.filter(q => q.status === 'pending').length;
       const isBatch      = pendingCount > 1;
