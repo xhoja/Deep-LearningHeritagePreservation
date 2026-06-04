@@ -141,7 +141,9 @@ def load_models():
 
         seg_model = _build_segmentor()
         ckpt = torch.load(SEG_CKPT, map_location="cpu")
-        seg_model.load_state_dict(ckpt["model_state"])
+        # Handle both old format (dict with "model_state") and new format (state_dict directly)
+        state = ckpt["model_state"] if isinstance(ckpt, dict) and "model_state" in ckpt else ckpt
+        seg_model.load_state_dict(state)
         seg_model.eval().to(DEVICE)
         _models["seg"] = seg_model
 
