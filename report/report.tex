@@ -873,7 +873,7 @@ A FastAPI web application integrates all three models with surface texture analy
 
 \subsection{Architecture and Concurrency}
 
-All model inference runs concurrently using a \texttt{ThreadPoolExecutor} with \texttt{max\_workers=4}. The four concurrent tasks are: (1) EfficientNet-B4 classification and Grad-CAM map; (2) YOLOv8l detection; (3) U-Net segmentation; (4) surface texture analysis (Gabor filter bank and Laplacian complexity map). This design ensures that total response time is approximately equal to the slowest individual model rather than the sum of all four, providing a practical interactive experience.
+All model inference runs concurrently using a \texttt{ThreadPoolExecutor} with \texttt{max\_workers=4}. The four concurrent tasks are: (1) EfficientNet-B4 classification and Grad-CAM map; (2) YOLOv8l detection; (3) MAnet segmentation; (4) surface texture analysis (Gabor filter bank and Laplacian complexity map). This design ensures that total response time is approximately equal to the slowest individual model rather than the sum of all four, providing a practical interactive experience.
 
 \subsection{Single-Image Analysis Mode}
 
@@ -890,7 +890,7 @@ The primary analysis mode accepts one or more uploaded images and returns a comp
 
 \item \textbf{Detection card:} Displays YOLOv8l bounding boxes overlaid on the input image. A blue badge indicates when a preprocessing filter has been applied before inference.
 
-\item \textbf{Segmentation card:} Displays the U-Net binary crack mask overlaid on the image. An SVG arc gauge renders crack pixel coverage as a percentage, colour-coded by severity (green below 5\%, yellow 5--15\%, orange 15--30\%, red above 30\%).
+\item \textbf{Segmentation card:} Displays the MAnet binary crack mask overlaid on the image. An SVG arc gauge renders crack pixel coverage as a percentage, colour-coded by severity (green below 5\%, yellow 5--15\%, orange 15--30\%, red above 30\%).
 
 \item \textbf{Surface texture analysis panel:} Displays the Gabor energy map (6 orientations $\times$ 3 wavelengths) and the local Laplacian standard deviation complexity map, both rendered as INFERNO-palette heatmaps. A scalar texture score (0--100) with a 5-tier label (Low / Mild / Moderate / High / Very High) is computed.
 
@@ -991,7 +991,7 @@ The inverted sigmoid pattern likely arises from the weighted sampling strategy (
 \section{Conclusions}
 %% ════════════════════════════════════════════════════════════
 
-This paper presents a comprehensive multi-task deep learning pipeline for automated structural damage assessment of cultural heritage buildings. Three computer vision models -- a binary damage classifier (EfficientNet-B4), a crack detector (YOLOv8l), and a pixel-level segmentor (U-Net/ResNet34) -- are trained on publicly available datasets and evaluated both in-distribution and across domains, with the cross-dataset generalisation question as the central thread.
+This paper presents a comprehensive multi-task deep learning pipeline for automated structural damage assessment of cultural heritage buildings. Three computer vision models -- a binary damage classifier (EfficientNet-B4), a crack detector (YOLOv8l), and a pixel-level segmentor (MAnet with MiT-B2 backbone) -- are trained on publicly available datasets and evaluated both in-distribution and across domains, with the cross-dataset generalisation question as the central thread.
 
 \textbf{Primary results:}
 
@@ -1000,7 +1000,7 @@ This paper presents a comprehensive multi-task deep learning pipeline for automa
 
 \item \textbf{Detection (YOLOv8l):} 96.7\% mAP@50 on OmniCrack30k validation, exceeding the 70\% target. A 62.1 pp validation-to-test gap (96.7\% to 34.6\%) directly demonstrates cross-domain generalisation degradation. Heritage-specific fine-tuning on 250 images recovers 23.6\% mAP on the combined heritage test set, a 168\% relative improvement.
 
-\item \textbf{Segmentation (U-Net/ResNet34):} 83.56\% mIoU and 81.26\% Dice on the combined Masonry and CrackForest test split, exceeding the 80\% mIoU target. The Focal-Tversky loss combination is critical, providing approximately 5 pp mIoU improvement over standard cross-entropy.
+\item \textbf{Segmentation (MAnet / MiT-B2):} 97.5\% Crack IoU and 98.1\% Dice on the combined OmniCrack30k, Masonry, and CrackForest test split, exceeding the 80\% target by 17.5 pp. Vision transformer backbones with multi-scale attention gates enable superior morphological capture. Deployment uses threshold 0.8 with inverted sigmoid logic, a domain-specific calibration discovered during web application validation.
 
 \item \textbf{Cross-domain generalisation is asymmetric by model type:} The classifier generalises gracefully (76--90\% recall on OOD domains); the segmentor generalises moderately (74--87\% mIoU); the detector collapses without adaptation (below 5\% mAP on heritage domains). This asymmetry is explained by the relative sensitivity of each model type's inductive biases to the domain shift.
 \end{enumerate}
@@ -1035,8 +1035,8 @@ This paper presents a comprehensive multi-task deep learning pipeline for automa
 \rowcolor{white}
 \textbf{Hyperparameter} & \textbf{Classifier (Task 1)} & \textbf{Detector (Task 2)} & \textbf{Segmentor (Task 3)} \\
 \midrule
-Architecture & EfficientNet-B4 & YOLOv8l & U-Net / ResNet34 \\
-Parameters & 19M & 11.2M & 24M \\
+Architecture & EfficientNet-B4 & YOLOv8l & MAnet / MiT-B2 \\
+Parameters & 19M & 11.2M & 39M \\
 Input resolution & 380$\times$380 & 416$\times$416 & 384$\times$384 \\
 Optimiser & AdamW & SGD (built-in) & AdamW \\
 Initial LR & $1 \times 10^{-4}$ & 0.01 & $3 \times 10^{-4}$ \\
@@ -1045,10 +1045,10 @@ Weight decay & $10^{-2}$ & $5 \times 10^{-4}$ & $10^{-4}$ \\
 Batch size & 16 (eff. 32) & 32 & 16 \\
 Epochs & 30 (early stop) & 30 & 150 (early stop) \\
 Early stop patience & 5 on val F1 & Not used & 15 on val mIoU \\
-Loss function & Weighted CE & YOLOv8 default & Focal + Tversky \\
+Loss function & Weighted CE & YOLOv8 default & Tversky + Lovász \\
 AMP & Yes & Yes & Yes \\
 Hardware & T4 GPU (Colab) & T4 GPU (Colab) & T4 GPU (Colab) \\
-Training time & $\approx$1.5 hr & $\approx$3.6 hr & $\approx$4.0 hr \\
+Training time & $\approx$1.5 hr & $\approx$3.6 hr & $\approx$5.0 hr \\
 \bottomrule
 \end{tabular}
 \end{table}
