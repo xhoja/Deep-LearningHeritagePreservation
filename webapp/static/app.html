@@ -1614,6 +1614,9 @@
       document.getElementById('cmp-loading').classList.remove('hidden');
       document.getElementById('compare-btn').disabled = true;
 
+      // Hide filter panel during analysis
+      document.getElementById('cmp-filter-panel').classList.add('hidden');
+
       const form = new FormData();
       form.append('before', cmpFiles.before);
       form.append('after',  cmpFiles.after);
