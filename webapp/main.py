@@ -210,12 +210,8 @@ def _segment(img: Image.Image) -> dict:
     with torch.no_grad():
         logits = _models["seg"](img_tensor)
 
-    # Apply threshold — inverted: low prob = crack (tuned for deployment)
+    # Apply threshold — inverted: low prob = crack (tuned 0.75 for deployment)
     seg_mask = torch.sigmoid(logits[0, 0]).cpu().numpy()
-
-    # DEBUG: print distribution
-    print(f"DEBUG segmentation: min={seg_mask.min():.4f}, max={seg_mask.max():.4f}, mean={seg_mask.mean():.4f}")
-
     seg_binary = (seg_mask < 0.75).astype(np.uint8) * 255
 
     # Resize back to original size
