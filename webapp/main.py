@@ -212,7 +212,7 @@ def _segment(img: Image.Image) -> dict:
 
     # Apply threshold — inverted: low prob = crack (tuned 0.75 for deployment)
     seg_mask = torch.sigmoid(logits[0, 0]).cpu().numpy()
-    seg_binary = (seg_mask < 0.75).astype(np.uint8) * 255
+    seg_binary = (seg_mask < 0.8).astype(np.uint8) * 255
 
     # Resize back to original size
     seg_binary_orig = cv2.resize(seg_binary, (w_orig, h_orig))
