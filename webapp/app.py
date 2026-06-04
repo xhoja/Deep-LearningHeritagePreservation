@@ -109,7 +109,9 @@ def _load_models():
     # Segmentor
     seg_model = _build_segmentor()
     ckpt = torch.load(SEG_CKPT, map_location="cpu")
-    seg_model.load_state_dict(ckpt["model_state"])
+    # Handle both old format (dict with "model_state") and new format (state_dict directly)
+    state = ckpt["model_state"] if isinstance(ckpt, dict) and "model_state" in ckpt else ckpt
+    seg_model.load_state_dict(state)
     seg_model.eval().to(DEVICE)
     _models["seg"] = seg_model
 
@@ -144,11 +146,42 @@ def _classify(pil_img: Image.Image) -> tuple[str, dict]:
 
 
 def _segment(pil_img: Image.Image, det_boxes: list = None) -> tuple:
-    """Return original image as fresh copy."""
+    """Segment cracks using MAnet model. Returns segmentation overlay and crack percentage."""
     img_arr = np.array(pil_img.convert("RGB"))
-    result_img = Image.fromarray(img_arr)
-    result_img.save("/tmp/seg_debug.jpg")
-    return result_img, 0.0
+    h_orig, w_orig = img_arr.shape[:2]
+
+    # Preprocess: CLAHE + resize + normalize
+    gray = cv2.cvtColor(img_arr, cv2.COLOR_RGB2GRAY)
+    enhanced = _CLAHE.apply(gray)
+    img_enhanced = cv2.cvtColor(enhanced, cv2.COLOR_GRAY2RGB)
+
+    img_resized = cv2.resize(img_enhanced, (SEG_SIZE, SEG_SIZE))
+    img_tensor = seg_transform(Image.fromarray(img_resized)).unsqueeze(0).to(DEVICE)
+
+    # Inference
+    with torch.no_grad():
+        logits = _models["seg"](img_tensor)
+
+    # Apply threshold (0.3 from training) — inverted: low prob = crack
+    seg_mask = torch.sigmoid(logits[0, 0]).cpu().numpy()
+    seg_binary = (seg_mask < 0.3).astype(np.uint8) * 255
+
+    # Resize back to original size
+    seg_binary_orig = cv2.resize(seg_binary, (w_orig, h_orig))
+
+    # Create red overlay on original image
+    result = img_arr.copy().astype(np.float32)
+    mask_3ch = np.stack([seg_binary_orig] * 3, axis=2) / 255.0
+    overlay_color = np.array(CRACK_COLOR, dtype=np.float32)
+    result = result * (1 - 0.4 * mask_3ch) + overlay_color * 0.4 * mask_3ch
+    result = np.clip(result, 0, 255).astype(np.uint8)
+
+    # Calculate crack percentage
+    crack_pixels = np.sum(seg_binary_orig > 0)
+    total_pixels = h_orig * w_orig
+    crack_pct = (crack_pixels / total_pixels) * 100.0
+
+    return Image.fromarray(result), crack_pct
 
 def _detect(pil_img: Image.Image) -> tuple[Image.Image, int]:
     img_arr = np.array(pil_img.convert("RGB"))
