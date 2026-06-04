@@ -82,6 +82,7 @@ SEG_CKPT = MODELS_DIR / "segmentor_best.pth"
 DET_CKPT = MODELS_DIR / "detector_best.pt"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_CLAHE = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
 # ---------------------------------------------------------------------------
 # Preprocessing
@@ -193,45 +194,44 @@ def _classify(img: Image.Image) -> dict:
 
 
 def _segment(img: Image.Image) -> dict:
-    orig_w, orig_h = img.size
-    tensor = seg_transform(img).unsqueeze(0).to(DEVICE)
-    model = _models["seg"]
-    model.eval()
+    """Segment cracks using MAnet model. Returns segmentation overlay and crack percentage."""
+    img_arr = np.array(img.convert("RGB"))
+    h_orig, w_orig = img_arr.shape[:2]
 
-    # 4-way TTA: original + H-flip + V-flip + 90° rotation, average predictions
+    # Preprocess: CLAHE + resize + normalize
+    gray = cv2.cvtColor(img_arr, cv2.COLOR_RGB2GRAY)
+    enhanced = _CLAHE.apply(gray)
+    img_enhanced = cv2.cvtColor(enhanced, cv2.COLOR_GRAY2RGB)
+
+    img_resized = cv2.resize(img_enhanced, (384, 384))
+    img_tensor = seg_transform(Image.fromarray(img_resized)).unsqueeze(0).to(DEVICE)
+
+    # Inference
     with torch.no_grad():
-        preds = [
-            torch.sigmoid(model(tensor)),
-            torch.flip(torch.sigmoid(model(torch.flip(tensor, [3]))), [3]),
-            torch.flip(torch.sigmoid(model(torch.flip(tensor, [2]))), [2]),
-            torch.rot90(torch.sigmoid(model(torch.rot90(tensor, 1, [2, 3]))), -1, [2, 3]),
-        ]
-        prob = torch.mean(torch.stack(preds), dim=0).squeeze().cpu().numpy()
+        logits = _models["seg"](img_tensor)
 
-    # Test both directions
-    mask_fwd = (prob > 0.80).astype(np.uint8)  # Normal: high prob = crack (higher threshold)
-    mask_inv = (prob < 0.20).astype(np.uint8)  # Inverted: low prob = crack (complementary)
-    
-    # Morphological closing for both
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask_fwd = cv2.morphologyEx(mask_fwd, cv2.MORPH_CLOSE, kernel)
-    mask_inv = cv2.morphologyEx(mask_inv, cv2.MORPH_CLOSE, kernel)
-    
-    # Use normal mask (prob > threshold) - model likely trained with this direction
-    mask = mask_fwd
-    mask_full = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
+    # Apply threshold (0.3 from training)
+    seg_mask = torch.sigmoid(logits[0, 0]).cpu().numpy()
+    seg_binary = (seg_mask > 0.3).astype(np.uint8) * 255
 
-    img_arr  = np.array(img)
-    overlay  = img_arr.copy()
-    overlay[mask_full == 1] = (
-        overlay[mask_full == 1] * 0.4 + np.array(CRACK_COLOR) * 0.6
-    ).astype(np.uint8)
-    contours, _ = cv2.findContours(mask_full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(overlay, contours, -1, CRACK_COLOR, 2)
+    # Resize back to original size
+    seg_binary_orig = cv2.resize(seg_binary, (w_orig, h_orig))
+
+    # Create red overlay on original image
+    result = img_arr.copy().astype(np.float32)
+    mask_3ch = np.stack([seg_binary_orig] * 3, axis=2) / 255.0
+    overlay_color = np.array(CRACK_COLOR, dtype=np.float32)
+    result = result * (1 - 0.4 * mask_3ch) + overlay_color * 0.4 * mask_3ch
+    result = np.clip(result, 0, 255).astype(np.uint8)
+
+    # Calculate crack percentage
+    crack_pixels = np.sum(seg_binary_orig > 0)
+    total_pixels = h_orig * w_orig
+    crack_pct = (crack_pixels / total_pixels) * 100.0
 
     return {
-        "image_b64": _pil_to_b64(Image.fromarray(overlay)),
-        "crack_pct": float(mask_full.mean() * 100),
+        "image_b64": _pil_to_b64(Image.fromarray(result)),
+        "crack_pct": crack_pct,
     }
 
 
