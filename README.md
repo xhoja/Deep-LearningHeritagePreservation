@@ -98,9 +98,18 @@ heritage-damage-assessment/
 │   └── utils.py                   # Metrics, Grad-CAM, visualization
 │
 ├── notebooks/
-│   ├── 01_classification.ipynb              # EfficientNet-B4 classification (with outputs)
-│   ├── 02_detection.ipynb                   # YOLOv8l detection (OmniCrack30K + DACL10K mixed, mAP@50 27.7% val)
-│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓ (threshold 0.70))
+│   ├── ===== PRODUCTION MODELS (main 3) =====
+│   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
+│   ├── 02_detection.ipynb                   # YOLOv8l detection on OmniCrack30K + DACL10K mixed
+│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 96.23% ✓)
+│   │
+│   ├── ===== REFERENCE NOTEBOOKS (old segmentation versions for professor) =====
+│   ├── 03_segmentation_v1.ipynb             # Initial U-Net + ResNet34 baseline (mIoU 83.56%)
+│   ├── 03_segmentation_inference_fp.ipynb   # Debugging false positive failure mode
+│   ├── 03_segmentation_retrain_v2.ipynb     # Progressive training phases v2
+│   ├── 03_segmentation_retrain_versionwighted.ipynb  # Weighted sampling approach
+│   │
+│   ├── ===== ANALYSIS NOTEBOOKS (experimental, supporting results) =====
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
 │   ├── 05_detector_finetuning.ipynb         # Domain adaptation: fine-tune detector on heritage data
 │   ├── 06_failure_analysis.ipynb            # Failure analysis & Grad-CAM++ across all three models
@@ -222,6 +231,29 @@ python infer.py \
   --output samples/predictions/ \
   --checkpoint checkpoints/
 ```
+
+### Notebook Organization
+
+**Production notebooks** (used for webapp + final evaluation):
+- `01_classification.ipynb` — Train EfficientNet-B4 classifier
+- `02_detection.ipynb` — Train YOLOv8l on OmniCrack30k + DACL10K mixed data
+- `03_segmentation.ipynb` — Train MAnet + mit_b2 segmentor on OmniCrack30k (with threshold tuning + weighted sampling for class balance)
+
+**Reference notebooks** (kept for professor review, showing prior segmentation approaches):
+- `03_segmentation_v1.ipynb` — U-Net + ResNet34 baseline
+- `03_segmentation_inference_fp.ipynb` — False-positive debugging notebook
+- `03_segmentation_retrain_v2.ipynb` — Progressive training phases v2
+- `03_segmentation_retrain_versionwighted.ipynb` — Weighted sampling approach
+
+**Analysis notebooks** (experimental; directly support results tables below):
+- `04_cross_dataset_eval.ipynb` — Generalization metrics + Grad-CAM visualizations
+- `05_detector_finetuning.ipynb` — Detector domain adaptation on heritage data
+- `06_failure_analysis.ipynb` — Failure modes + Grad-CAM++ for all three models
+- `07_sahi_evaluation.ipynb` — SAHI sliced inference comparison
+- `08_classifier_finetuning.ipynb` — Classifier heritage domain adaptation
+- `09_degradation_analysis.ipynb` — Synthetic temporal degradation + filter bank analysis
+- `10_dacl10k_detector.ipynb` — Multi-class DACL10K detector (5-class damage types)
+
 
 ### Metrics and SotA Targets
 
@@ -649,7 +681,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] About page: full academic documentation of pipeline, degradation analysis, and preprocessing filter theory
 - [x] Write project report (`report/report.pdf`)
 - [x] Write article reading survey (`report/article_survey.pdf`)
-- [ ] PowerPoint presentation
+- [x] PowerPoint presentation
 
 
 ## Author
