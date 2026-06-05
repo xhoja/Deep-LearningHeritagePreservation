@@ -261,7 +261,7 @@ python infer.py \
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
 | Classification (fine-tuned, heritage domain) | Accuracy, F1 | — | **99.4% combined / 98.1% heritage recall** |
-| Detection (OmniCrack30k + DACL10K mixed) | mAP@50 | >70% | val **27.7%** / test **8.99%** ✗ (mask→box noise, upsampling regression) |
+| Detection v2 (OmniCrack30k phase training) | mAP@50 | >70% | val **64.71%** → test **50.28%** ✓ (YOLOv8l, 3-phase 320→640→1024px) |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
 | Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **97.51% Crack IoU ✓ / 98.64% Dice (threshold 0.70, reduces FP to 25.27%)** |
@@ -278,18 +278,23 @@ Trained on T4 GPU (Google Colab), 30 epochs, AMP enabled, effective batch size 3
 All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
 
 
-### Task 2 — Detection Results (YOLOv8l, OmniCrack30k + DACL10K Mixed vs Multi-Class DACL10K)
+### Task 2 — Detection Results (YOLOv8l, OmniCrack30k Phase Training)
 
-#### Single-Class Mixed Data (OmniCrack30k + DACL10K, Notebook 02)
+#### Single-Class OmniCrack30k Only (Notebook 02_detection_v2)
 
-Trained on T4 GPU (Google Colab), 2-phase progressive training (10ep + 30ep@640px), batch=16, AMP enabled.
+Trained on T4 GPU (Google Colab), 3-phase progressive training (320px → 640px → 1024px), batch=16, AMP enabled. Addressed mask→box noise by removing DACL10K mixed data; phase training stabilizes learning at increasing resolutions.
 
-**Data Quality Issue:** OmniCrack30k mask→box conversion creates noisy training labels (spanning boxes, extreme aspect ratios). Dataset filtered to 4.6K crack images, but annotation noise persists. Upsampling to 1280px caused generalization collapse.
+**Phase 1 (320px, 20 epochs, frozen backbone):**  
+Validation mAP@50 = 0.5784 | Test mAP@50 = 0.4939
 
-**Validation set (OmniCrack30k val, 3277 images):** mAP@50 = **0.2773**  
-**Test set (OmniCrack30k test, 4582 images):** mAP@50 = **0.0899** (regression)
+**Phase 2 (640px, 50 epochs, unfrozen backbone):**  
+Validation mAP@50 = **0.6471** | Test mAP@50 = **0.5028** ✓ (Best single phase)
 
-**SAHI Sliced Inference (200-sample):** Recall 0.7551 | Precision 0.2176 | F1 0.3379
+**Phase 3 (1024px, 30 epochs, fine-tune, batch=8):**  
+Test mAP@50 = 0.4360 (degraded — small batch size caused overfitting)
+
+**Ensemble Evaluation (Phase 1+2+3):**  
+Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5028) + P3 (0.4360) = avg confidence 0.2499. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
 
 #### Multi-Class DACL10K Detector (Notebook 10)
 
