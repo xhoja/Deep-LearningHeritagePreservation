@@ -41,9 +41,9 @@ Input Image
      ▼  (routed only if classified as cracked)
 [Task 2] Crack Detection
          Bounding box localisation of crack regions
-         Model: YOLOv8s — two variants:
-           • General: trained on OmniCrack30k (30k images)
-           • Heritage: fine-tuned on CrackForest + Masonry (250 images)
+         Model: YOLOv8l (3-phase progressive training: 320px → 640px → 1024px)
+           • Trained on OmniCrack30k only (30k images, 70-15-15 split)
+           • Phase 2 best: test mAP@50 = 50.3%
          Output: bounding boxes + confidence scores
      │
      ▼
@@ -100,8 +100,8 @@ heritage-damage-assessment/
 ├── notebooks/
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
-│   ├── 02_detection.ipynb                   # YOLOv8l detection on OmniCrack30K + DACL10K mixed
-│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 96.23% ✓)
+│   ├── 02_detection_v2.ipynb                # YOLOv8l phase training on OmniCrack30K (mAP@50 50.3% ✓)
+│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓)
 │   │
 │   ├── ===== REFERENCE NOTEBOOKS (old segmentation versions for professor) =====
 │   ├── 03_segmentation_v1.ipynb             # Initial U-Net + ResNet34 baseline (mIoU 83.56%)
@@ -180,11 +180,20 @@ python train_classifier.py \
 
 ### Task 2 — Detection
 
+Use Jupyter notebook for phase training (recommended):
+
+```bash
+notebooks/02_detection_v2.ipynb
+```
+
+Or train via CLI (legacy):
+
 ```bash
 python train_detector.py \
   --data data/omnicrack \
-  --model yolov8 \
+  --model yolov8l \
   --epochs 50 \
+  --imgsz 640 \
   --output checkpoints/detector/
 ```
 
@@ -236,7 +245,7 @@ python infer.py \
 
 **Production notebooks** (used for webapp + final evaluation):
 - `01_classification.ipynb` — Train EfficientNet-B4 classifier
-- `02_detection.ipynb` — Train YOLOv8l on OmniCrack30k + DACL10K mixed data
+- `02_detection_v2.ipynb` — Train YOLOv8l with phase training (320px → 640px → 1024px) on OmniCrack30k only; threshold tuning + ensemble voting
 - `03_segmentation.ipynb` — Train MAnet + mit_b2 segmentor on OmniCrack30k (with threshold tuning + weighted sampling for class balance)
 
 **Reference notebooks** (kept for professor review, showing prior segmentation approaches):
