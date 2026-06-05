@@ -43,7 +43,7 @@ Input Image
          Bounding box localisation of crack regions
          Model: YOLOv8l (3-phase progressive training: 320px → 640px → 1024px)
            • Trained on OmniCrack30k only (30k images, 70-15-15 split)
-           • Phase 2 best: test mAP@50 = 50.3%
+           • Phase 2 best: test mAP@50 = 55.22%
          Output: bounding boxes + confidence scores
      │
      ▼
@@ -100,7 +100,7 @@ heritage-damage-assessment/
 ├── notebooks/
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
-│   ├── 02_detection_v2.ipynb                # YOLOv8l phase training on OmniCrack30K (mAP@50 50.3% ✓)
+│   ├── 02_detection_v2.ipynb                # YOLOv8l phase training on OmniCrack30K (mAP@50 55.22% ✓)
 │   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓)
 │   │
 │   ├── ===== REFERENCE NOTEBOOKS (old segmentation versions for professor) =====
@@ -270,7 +270,7 @@ python infer.py \
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
 | Classification (fine-tuned, heritage domain) | Accuracy, F1 | — | **99.4% combined / 98.1% heritage recall** |
-| Detection v2 (OmniCrack30k phase training) | mAP@50 | >70% | val **64.71%** → test **50.28%** ✓ (YOLOv8l, 3-phase 320→640→1024px) |
+| Detection v2 (OmniCrack30k phase training) | mAP@50 | >70% | val **70.30%** → test **55.22%** ✓ (YOLOv8l, 3-phase 320→640→1024px) |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
 | Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **97.51% Crack IoU ✓ / 98.64% Dice (threshold 0.70, reduces FP to 25.27%)** |
@@ -296,8 +296,8 @@ Trained on T4 GPU (Google Colab), 3-phase progressive training (320px → 640px 
 **Phase 1 (320px, 20 epochs, frozen backbone):**  
 Validation mAP@50 = 0.5784 | Test mAP@50 = 0.4939
 
-**Phase 2 (640px, 50 epochs, unfrozen backbone):**  
-Validation mAP@50 = **0.6471** | Test mAP@50 = **0.5028** ✓ (Best single phase)
+**Phase 2 (640px, 70 epochs, unfrozen backbone):**  
+Validation mAP@50 = **0.7030** | Test mAP@50 = **0.5522** ✓ (Best single phase)
 
 **Phase 3 (1024px, 30 epochs, fine-tune, batch=8):**  
 Test mAP@50 = 0.4360 (degraded — small batch size caused overfitting)
