@@ -49,8 +49,8 @@ Input Image
      ▼
 [Task 3] Crack Segmentation
          Pixel-level crack mask
-         Model: U-Net + ResNet34 encoder (ImageNet pretrained)
-         Trained on: Masonry (240) + CrackForest (118) combined
+         Model: MAnet + mit_b2 encoder (ImageNet pretrained, 3-phase progressive training)
+         Trained on: CrackForest (118) + OmniCrack30k (3,000 subsample; masonry excluded)
          Output: binary crack mask (crack / background)
 ```
 
@@ -93,19 +93,19 @@ heritage-damage-assessment/
 │   ├── models/
 │   │   ├── classifier.py          # ResNet/EfficientNet classifier
 │   │   ├── detector.py            # YOLOv8 / Faster R-CNN wrapper
-│   │   └── segmentor.py           # U-Net with ResNet encoder
+│   │   └── segmentor.py           # MAnet + mit_b2 encoder
 │   ├── pipeline.py                # End-to-end inference pipeline
 │   └── utils.py                   # Metrics, Grad-CAM, visualization
 │
 ├── notebooks/
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
-│   ├── 02_detection.ipynb                   # YOLOv8l phase training on OmniCrack30K (mAP@50 63.01% ✓)
+│   ├── 02_detection.ipynb                   # YOLOv8l phase training on OmniCrack30K (Phase 2 test mAP@50 55.22% ✓)
 │   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓)
 │   │
 │   ├── ===== ANALYSIS NOTEBOOKS (experimental, supporting results) =====
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
-│   ├── 05_detector_finetuning.ipynb         # Domain adaptation: fine-tune detector on heritage data
+│   ├── 05_detector_finetuning.ipynb         # Overfitting reduction + TTA evaluation (63.01% TTA mAP@50 on val)
 │   ├── 06_failure_analysis.ipynb            # Failure analysis & Grad-CAM++ across all three models
 │   ├── 07_classifier_finetuning.ipynb       # Classifier domain adaptation on heritage masonry data
 │   ├── 08_degradation_analysis.ipynb        # Synthetic temporal degradation + classical filter bank analysis
@@ -197,7 +197,7 @@ python train_detector.py \
 ```bash
 python train_segmentor.py \
   --data data/masonry data/crackforest \
-  --encoder resnet34 \
+  --encoder mit_b2 \
   --epochs 150 \
   --img-size 384 \
   --output checkpoints/segmentor/
@@ -241,11 +241,11 @@ python infer.py \
 **Production notebooks** (used for webapp + final evaluation):
 - `01_classification.ipynb` — Train EfficientNet-B4 classifier
 - `02_detection.ipynb` — Train YOLOv8l with phase training (320px → 640px → 1024px) on OmniCrack30k only; threshold tuning + ensemble voting
-- `03_segmentation.ipynb` — Train MAnet + mit_b2 segmentor on OmniCrack30k (with threshold tuning + weighted sampling for class balance)
+- `03_segmentation.ipynb` — Train MAnet + mit_b2 segmentor on CrackForest (118) + OmniCrack30k (3,000 subsample); threshold tuning + weighted sampling for class balance
 
 **Analysis notebooks** (experimental; directly support results tables below):
 - `04_cross_dataset_eval.ipynb` — Generalization metrics + Grad-CAM visualizations
-- `05_detector_finetuning.ipynb` — Detector domain adaptation on heritage data
+- `05_detector_finetuning.ipynb` — Reduce val→test overfitting gap + TTA/SAHI evaluation (63.01% TTA mAP@50)
 - `06_failure_analysis.ipynb` — Failure modes + Grad-CAM++ for all three models
 - `07_classifier_finetuning.ipynb` — Classifier heritage domain adaptation
 - `08_degradation_analysis.ipynb` — Synthetic temporal degradation + filter bank analysis
