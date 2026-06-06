@@ -352,30 +352,32 @@ Each trained model was evaluated on datasets it was **not** trained on to measur
 
 Graceful degradation. Masonry drop (~23 pp) consistent with the visual domain shift from historic wall photographs to structured masonry crack patterns. t-SNE of 1 792-d avgpool features shows three clearly separated domain clusters, confirming genuine distribution gap.
 
-#### Segmentor (U-Net + ResNet34) — mIoU per source within test split
+#### Segmentor (MAnet + mit_b2, segmentor_v4) — mIoU per source within test split
 
 | Source subset | mIoU | Crack IoU | Dice |
 |---|---|---|---|
-| Combined test (in-distribution) | **83.56%** | 68.43% | 81.26% |
-| CrackForest subset | **73.61%** | 48.78% | 65.58% |
-| Masonry subset | **86.92%** | 75.01% | 85.72% |
+| Combined test (in-distribution, OmniCrack30k) | **85.67%** | 97.51% | 98.08% |
+| CrackForest subset (cross-domain) | **41.87%** | 2.43% | 4.74% |
+| Masonry subset (cross-domain) | **51.79%** | 17.30% | 29.50% |
 
-Model generalises better to masonry (wider cracks, stronger contrast) than CrackForest (thin, irregular cracks). Qualitative inference on HistoricalCrack/cracked images shows plausible crack masks despite zero heritage-specific training data.
+Strong in-distribution performance (Crack IoU 97.51%) but significant cross-domain drop — expected, as MAnet+mit_b2 was trained on OmniCrack30k (pavement/concrete cracks) and CrackForest/Masonry have structurally different crack morphologies. The segmentor generalises moderately better to masonry (wider, more continuous cracks) than CrackForest (thin, irregular road cracks). Qualitative inference on HistoricalCrack/cracked images shows plausible crack masks despite zero heritage-specific training data.
 
-#### Detector (YOLOv8s, OmniCrack30k weights) — mAP@50
+#### Detector (YOLOv8l, OmniCrack30k, 3-phase training) — mAP@50
 
 | Test Domain | mAP@50 | Notes |
 |---|---|---|
-| OmniCrack30k test (in-distribution) | **34.59%** | Evaluated on own test split |
-| CrackForest | **4.76%** | Severe collapse |
-| Masonry | **1.13%** | Near-zero |
+| OmniCrack30k test (in-distribution, TTA) | **63.01%** | 581-image test split, notebook 05 |
+| CrackForest (cross-domain) | **4.09%** | Severe collapse |
+| Masonry (cross-domain) | **1.74%** | Near-zero |
 
-**Finding:** The detector shows catastrophic cross-domain collapse. OmniCrack30k images are large-scale pavement/concrete photographs; CrackForest and Masonry contain fine, structured heritage cracks at smaller scale and different texture. The model's bounding-box priors and feature responses do not transfer without adaptation — motivating Task 5.
+**Finding:** Despite strong in-distribution performance (63.01% TTA mAP@50), the detector shows catastrophic cross-domain collapse. OmniCrack30k images are large-scale pavement/concrete photographs; CrackForest and Masonry contain fine, structured heritage cracks at smaller scale and different texture. The model's bounding-box priors and feature responses do not transfer without adaptation — motivating Task 5.
 
 
-### Task 5 — Detector Domain Adaptation (`notebooks/05_detector_finetuning.ipynb`)
+### Task 5 — Detector Domain Adaptation & Model Selection (`notebooks/05_detector_finetuning.ipynb`)
 
-**Approach:** Fine-tuned the OmniCrack30k YOLOv8s checkpoint on CrackForest + Masonry combined (358 images, stratified 70/15/15 split). Key hyperparameters: `freeze=10` (first 10 backbone layers frozen to preserve OmniCrack features), `lr0=0.001` (10× below default), 50 epochs, patience=15.
+**Production detector — why YOLOv8l (3-phase, `02_detection_v2.ipynb`):** The final production model is the **YOLOv8l trained with 3-phase progressive training** (320px → 640px → 1024px) on OmniCrack30k-only data, achieving **63.01% TTA mAP@50** on the 581-image test split. This replaced the earlier YOLOv8s baseline (34.59%) for three reasons: (1) larger backbone (YOLOv8l) provides better feature capacity for fine crack localisation; (2) phase training stabilises learning at increasing resolutions without overfitting; (3) removing mixed DACL10K data eliminated mask→box annotation noise that degraded single-class performance.
+
+**Approach (domain adaptation):** Fine-tuned the OmniCrack30k YOLOv8l checkpoint on CrackForest + Masonry combined (358 images, stratified 70/15/15 split). Key hyperparameters: `freeze=10` (first 10 backbone layers frozen to preserve OmniCrack features), `lr0=0.001` (10× below default), 50 epochs, patience=15.
 
 #### Before vs After Fine-tuning — mAP@50
 
@@ -425,46 +427,43 @@ The classifier generalises with near-certainty to both OOD crack domains. Grad-C
 
 #### Detection — Domain Gap Quantified
 
-YOLOv8s (trained on OmniCrack30k road cracks) evaluated on HistoricalCrack building facades:
+YOLOv8l (3-phase, trained on OmniCrack30k) evaluated on HistoricalCrack building facades (780 images, cross-domain):
 
 | Metric | Value |
 |---|---|
-| True Positives | 152 |
-| False Positives | 628 |
-| False Negatives | **0** |
-| Precision @conf≥0.25 | 0.195 |
-| **Recall @conf≥0.25** | **1.000** |
+| True Positives | 45 |
+| False Positives | 24 |
+| False Negatives | **107** |
+| Precision @conf≥0.25 | 0.652 |
+| **Recall @conf≥0.25** | **0.296** |
 
-The detector fires on all 780 test images, including 624 intact building facades. This is a domain adaptation failure: OmniCrack30k images are pavement/concrete photographs; HistoricalCrack contains plaster and stone facade textures that the detector treats as crack-like. However, **recall is 1.0** — every actual crack is detected. For structural damage assessment, this is the correct failure mode: false alarms are preferable to missed damage. The chained pipeline addresses this directly — the upstream classifier (99.49% accurate) acts as a gate and rejects intact images before detection, eliminating FP load in practice.
+The upgraded YOLOv8l detector is far more precise than the previous YOLOv8s baseline (P=0.652 vs 0.195) — it no longer fires on every image. However, recall drops to 0.296 on HistoricalCrack: the model misses many heritage building cracks because it was trained exclusively on OmniCrack30k road/pavement cracks. This is the canonical cross-domain failure for detection: texture and scale mismatch between training domain and target domain. The pipeline handles this through the domain-adaptation fine-tuning in Task 5 and the upstream classifier gate.
 
-Confidence histogram analysis shows TP and FP detections have overlapping confidence distributions, explaining why threshold tuning alone cannot separate them without domain adaptation (see notebook 05).
+#### Segmentation — Cross-Domain Failure Cases (MAnet + mit_b2, segmentor_v4)
 
-#### Segmentation — Metric Clarification & Failure Cases
-
-Two IoU metrics are reported to align with the literature and with notebook 03:
+Evaluated on Masonry + CrackForest combined (358 images) — both cross-domain relative to OmniCrack30k training data:
 
 | Metric | Value | Notes |
 |---|---|---|
-| Crack IoU (hard) | 0.6914 | Crack pixels only — ~3% of image area |
-| Background IoU | 0.9899 | Background nearly always correct |
-| **2-class mIoU** | **0.8407** | Mean(crack IoU, bg IoU) — matches notebook 03 (target >0.80 ✓) |
-| Dice (crack class) | 0.8064 | |
-| % images > 0.80 mIoU | 65.6% | |
-| % images < 0.50 crack IoU | 10.6% | |
+| Crack IoU (hard) | 0.3524 | Cross-domain; in-dist = 97.51% (Task 3) |
+| Background IoU | 0.8375 | Background mostly correct |
+| **2-class mIoU** | **0.5949** | Cross-domain degradation from in-dist 85.67% |
+| Dice (crack) | 0.4485 | |
+| % images > 0.80 crack IoU | 8.7% | |
+| % images > 0.80 2-class mIoU | 26.0% | |
+| % images < 0.50 crack IoU | 63.4% | Majority fails cross-domain |
 
-Crack pixels constitute ~3% of each image, so a model could score ~97% pixel accuracy by predicting all-background. The 2-class mIoU (0.84) and Dice (0.81) together confirm the model is genuinely learning crack structure, not background shortcuts.
-
-Best/worst IoU visualisations use semi-transparent error overlays on the original image: **green = correct crack pixels (TP), red = missed cracks (FN), blue = spurious predictions (FP)**. Worst-case failures share a common pattern: thin hairline cracks (<3 px wide) embedded in complex masonry textures with similar intensity.
+Cross-domain drop from 97.51% → 35.24% Crack IoU confirms the segmentor learned crack representations specific to OmniCrack30k's pavement/concrete texture. The in-distribution performance (97.51% Crack IoU, Task 3) far exceeds the SotA target; the cross-domain gap is the subject of ongoing analysis. Best/worst IoU visualisations use semi-transparent error overlays: **green = TP, red = FN, blue = FP**. Worst-case failures concentrate on thin hairline cracks in complex masonry textures with similar intensity to the crack.
 
 #### Cross-Task Consistency
 
 | Failure Mode | Count | Interpretation |
 |---|---|---|
-| Type A: classifier=intact, detector fires | 624 | All intact images — detector ignores classifier gate |
-| Type B: classifier=cracked, detector silent | 0 | No case where classifier fires but detector misses |
-| Classifier ↔ Detector agreement | 20% | Structurally expected given recall=100% detector |
+| Type A: classifier=intact, detector fires | 24 | Detector false alarms on intact heritage textures |
+| Type B: classifier=cracked, detector silent | 111 | Detector misses cracks the classifier catches |
+| Classifier ↔ Detector agreement | 82.7% (645/780) | High agreement reflects better-calibrated detector |
 
-The 20% agreement rate is mathematically expected: the classifier labels ~20% of images as cracked; the detector fires on 100%; they agree only on the cracked subset. Type B = 0 is the important result — every image the classifier calls cracked, the detector also fires on, meaning the two models are fully consistent on positive cases.
+The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s (which fired on all 780 images). Agreement rises to 82.7%, demonstrating better calibration. Type B = 111 is the new critical failure mode: the detector silently misses cracks that the classifier flags — a consequence of the OmniCrack30k→HistoricalCrack domain gap. In the pipeline, the classifier gate still prevents most intact images from reaching the detector; the missed detections (FN) motivate domain adaptation fine-tuning (Task 5).
 
 
 ### Task 7 — SAHI Sliced Inference Evaluation (`notebooks/07_sahi_evaluation.ipynb`)

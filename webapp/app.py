@@ -279,7 +279,7 @@ HEADER = """
 BADGE_ROW = """
 <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin: 8px 0 20px 0; font-size:0.85rem; color:#444;">
   <span>🔍 <strong>Classification</strong> — EfficientNet-B4 &nbsp;|&nbsp; 99.8% accuracy</span>
-  <span>📦 <strong>Detection</strong> — YOLOv8l (phase training) &nbsp;|&nbsp; mAP@50 = 50.3%</span>
+  <span>📦 <strong>Detection</strong> — YOLOv8l (phase training) &nbsp;|&nbsp; mAP@50 = 63.01%</span>
   <span>🗺 <strong>Segmentation</strong> — MAnet+mit_b2 &nbsp;|&nbsp; Crack IoU = 97.5%</span>
 </div>
 """
