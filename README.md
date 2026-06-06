@@ -100,23 +100,18 @@ heritage-damage-assessment/
 ├── notebooks/
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
-│   ├── 02_detection_v2.ipynb                # YOLOv8l phase training on OmniCrack30K (mAP@50 55.22% ✓)
+│   ├── 02_detection.ipynb                   # YOLOv8l phase training on OmniCrack30K (mAP@50 63.01% ✓)
 │   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓)
-│   │
-│   ├── ===== REFERENCE NOTEBOOKS (old segmentation versions for professor) =====
-│   ├── 03_segmentation_v1.ipynb             # Initial U-Net + ResNet34 baseline (mIoU 83.56%)
-│   ├── 03_segmentation_inference_fp.ipynb   # Debugging false positive failure mode
-│   ├── 03_segmentation_retrain_v2.ipynb     # Progressive training phases v2
-│   ├── 03_segmentation_retrain_versionwighted.ipynb  # Weighted sampling approach
 │   │
 │   ├── ===== ANALYSIS NOTEBOOKS (experimental, supporting results) =====
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
 │   ├── 05_detector_finetuning.ipynb         # Domain adaptation: fine-tune detector on heritage data
 │   ├── 06_failure_analysis.ipynb            # Failure analysis & Grad-CAM++ across all three models
-│   ├── 07_sahi_evaluation.ipynb             # SAHI sliced inference vs plain YOLO comparison
-│   ├── 08_classifier_finetuning.ipynb       # Classifier domain adaptation on heritage masonry data
-│   ├── 09_degradation_analysis.ipynb        # Synthetic temporal degradation + classical filter bank analysis
-│   └── 10_dacl10k_detector.ipynb            # Multi-class damage detector on DACL10K (5 classes, mAP@50 13.48%)
+│   ├── 07_classifier_finetuning.ipynb       # Classifier domain adaptation on heritage masonry data
+│   ├── 08_degradation_analysis.ipynb        # Synthetic temporal degradation + classical filter bank analysis
+│   ├── 09_dacl10k_detector.ipynb            # Multi-class damage detector on DACL10K (5 classes, mAP@50 13.48%)
+│   │
+│   └── old_notebooks/                       # Previous versions kept for reference
 │
 ├── samples/                       # Testing samples for validation (required deliverable)
 │   ├── images/                    # Sample input images
@@ -183,7 +178,7 @@ python train_classifier.py \
 Use Jupyter notebook for phase training (recommended):
 
 ```bash
-notebooks/02_detection_v2.ipynb
+notebooks/02_detection.ipynb
 ```
 
 Or train via CLI (legacy):
@@ -245,23 +240,18 @@ python infer.py \
 
 **Production notebooks** (used for webapp + final evaluation):
 - `01_classification.ipynb` — Train EfficientNet-B4 classifier
-- `02_detection_v2.ipynb` — Train YOLOv8l with phase training (320px → 640px → 1024px) on OmniCrack30k only; threshold tuning + ensemble voting
+- `02_detection.ipynb` — Train YOLOv8l with phase training (320px → 640px → 1024px) on OmniCrack30k only; threshold tuning + ensemble voting
 - `03_segmentation.ipynb` — Train MAnet + mit_b2 segmentor on OmniCrack30k (with threshold tuning + weighted sampling for class balance)
-
-**Reference notebooks** (kept for professor review, showing prior segmentation approaches):
-- `03_segmentation_v1.ipynb` — U-Net + ResNet34 baseline
-- `03_segmentation_inference_fp.ipynb` — False-positive debugging notebook
-- `03_segmentation_retrain_v2.ipynb` — Progressive training phases v2
-- `03_segmentation_retrain_versionwighted.ipynb` — Weighted sampling approach
 
 **Analysis notebooks** (experimental; directly support results tables below):
 - `04_cross_dataset_eval.ipynb` — Generalization metrics + Grad-CAM visualizations
 - `05_detector_finetuning.ipynb` — Detector domain adaptation on heritage data
 - `06_failure_analysis.ipynb` — Failure modes + Grad-CAM++ for all three models
-- `07_sahi_evaluation.ipynb` — SAHI sliced inference comparison
-- `08_classifier_finetuning.ipynb` — Classifier heritage domain adaptation
-- `09_degradation_analysis.ipynb` — Synthetic temporal degradation + filter bank analysis
-- `10_dacl10k_detector.ipynb` — Multi-class DACL10K detector (5-class damage types)
+- `07_classifier_finetuning.ipynb` — Classifier heritage domain adaptation
+- `08_degradation_analysis.ipynb` — Synthetic temporal degradation + filter bank analysis
+- `09_dacl10k_detector.ipynb` — Multi-class DACL10K detector (5-class damage types)
+
+**Old notebooks** (previous versions, kept in `old_notebooks/` for reference)
 
 
 ### Metrics and SotA Targets
@@ -289,7 +279,7 @@ All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for 
 
 ### Task 2 — Detection Results (YOLOv8l, OmniCrack30k Phase Training)
 
-#### Single-Class OmniCrack30k Only (Notebook 02_detection_v2)
+#### Single-Class OmniCrack30k Only (Notebook 02_detection)
 
 Trained on T4 GPU (Google Colab), 3-phase progressive training (320px → 640px → 1024px), batch=16, AMP enabled. Addressed mask→box noise by removing DACL10K mixed data; phase training stabilizes learning at increasing resolutions.
 
@@ -305,7 +295,7 @@ Test mAP@50 = 0.4360 (degraded — small batch size caused overfitting)
 **Ensemble Evaluation (Phase 1+2+3):**  
 Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5028) + P3 (0.4360) = avg confidence 0.2499. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
 
-#### Multi-Class DACL10K Detector (Notebook 10)
+#### Multi-Class DACL10K Detector (Notebook 09)
 
 Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + efflorescence, spalling, weathering, wetspot), 50 epochs, 640px, batch=16.
 
@@ -320,7 +310,7 @@ Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + e
 | wetspot | 0.0657 | 218 |
 | **all** | **0.1348** | 3,223 |
 
-**Finding:** Single-class training on mixed noisy data (notebook 02) fails. Multi-class on structured dacl10k (notebook 10) shows class-specific patterns (weathering best, wetspot worst) but overall ceiling is low (~13%). Root cause: detection task fundamentally harder than segmentation; thin cracks need high-res slicing (SAHI) for recall, but precision remains limited by dataset annotation quality and crack scale variation across sources.
+**Finding:** Single-class training on mixed noisy data (notebook 02) fails. Multi-class on structured dacl10k (notebook 09) shows class-specific patterns (weathering best, wetspot worst) but overall ceiling is low (~13%). Root cause: detection task fundamentally harder than segmentation; thin cracks need high-res slicing (SAHI) for recall, but precision remains limited by dataset annotation quality and crack scale variation across sources.
 
 ### Task 3 — Segmentation Results (MAnet + mit_b2, Masonry + CrackForest)
 
@@ -375,7 +365,7 @@ Strong in-distribution performance (Crack IoU 97.51%) but significant cross-doma
 
 ### Task 5 — Detector Domain Adaptation & Model Selection (`notebooks/05_detector_finetuning.ipynb`)
 
-**Production detector — why YOLOv8l (3-phase, `02_detection_v2.ipynb`):** The final production model is the **YOLOv8l trained with 3-phase progressive training** (320px → 640px → 1024px) on OmniCrack30k-only data, achieving **63.01% TTA mAP@50** on the 581-image test split. This replaced the earlier YOLOv8s baseline (34.59%) for three reasons: (1) larger backbone (YOLOv8l) provides better feature capacity for fine crack localisation; (2) phase training stabilises learning at increasing resolutions without overfitting; (3) removing mixed DACL10K data eliminated mask→box annotation noise that degraded single-class performance.
+**Production detector — why YOLOv8l (3-phase, `02_detection.ipynb`):** The final production model is the **YOLOv8l trained with 3-phase progressive training** (320px → 640px → 1024px) on OmniCrack30k-only data, achieving **63.01% TTA mAP@50** on the 581-image test split. This replaced the earlier YOLOv8s baseline (34.59%) for three reasons: (1) larger backbone (YOLOv8l) provides better feature capacity for fine crack localisation; (2) phase training stabilises learning at increasing resolutions without overfitting; (3) removing mixed DACL10K data eliminated mask→box annotation noise that degraded single-class performance.
 
 **Approach (domain adaptation):** Fine-tuned the OmniCrack30k YOLOv8l checkpoint on CrackForest + Masonry combined (358 images, stratified 70/15/15 split). Key hyperparameters: `freeze=10` (first 10 backbone layers frozen to preserve OmniCrack features), `lr0=0.001` (10× below default), 50 epochs, patience=15.
 
@@ -466,7 +456,7 @@ Cross-domain drop from 97.51% → 35.24% Crack IoU confirms the segmentor learne
 The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s (which fired on all 780 images). Agreement rises to 82.7%, demonstrating better calibration. Type B = 111 is the new critical failure mode: the detector silently misses cracks that the classifier flags — a consequence of the OmniCrack30k→HistoricalCrack domain gap. In the pipeline, the classifier gate still prevents most intact images from reaching the detector; the missed detections (FN) motivate domain adaptation fine-tuning (Task 5).
 
 
-### Task 7 — SAHI Sliced Inference Evaluation (`notebooks/07_sahi_evaluation.ipynb`)
+### Task 7 — SAHI Sliced Inference Evaluation
 
 **Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
 
@@ -481,7 +471,7 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 **Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
 
 
-### Task 10 — Multi-Class Damage Detector on DACL10k (`notebooks/10_dacl10k_detector.ipynb`)
+### Task 9 — Multi-Class Damage Detector on DACL10k (`notebooks/09_dacl10k_detector.ipynb`)
 
 **Motivation:** The single-class crack detector (OmniCrack30k) produces binary crack/no-crack boxes. Heritage buildings exhibit multiple co-occurring damage types. DACL10k provides polygon-annotated structural damage across 19 classes; this task trains a 5-class multi-class detector capturing the most architecturally significant deterioration types.
 
@@ -519,7 +509,7 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 5. **Multi-class value:** enables per-damage-type localisation unavailable from the single-class model — directly supports heritage condition mapping with specific deterioration labels.
 
 
-### Task 1b — Classifier Domain Adaptation (`notebooks/08_classifier_finetuning.ipynb`)
+### Task 1b — Classifier Domain Adaptation (`notebooks/07_classifier_finetuning.ipynb`)
 
 **Problem:** EfficientNet-B4 (trained on HistoricalCrack) achieves 99.83% on its own test split but only 71.2% cracked recall on heritage masonry images, where GradCAM shows attention on irrelevant background regions.
 
@@ -537,7 +527,7 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 3. **GradCAM attention shifts** — post fine-tuning, the model attends to crack edges and branching structures in masonry images rather than irrelevant background textures.
 
 
-### Task 9 — Synthetic Temporal Degradation Analysis (`notebooks/09_degradation_analysis.ipynb`)
+### Task 8 — Synthetic Temporal Degradation Analysis (`notebooks/08_degradation_analysis.ipynb`)
 
 **Motivation:** No public dataset of aligned, multi-decade facade photos of the same heritage building exists. This notebook addresses the gap with a physically-motivated synthetic degradation pipeline, then characterises how classical signal-processing filters respond as damage accumulates.
 

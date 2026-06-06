@@ -544,6 +544,34 @@
         </div>
       </div>
 
+      <!-- Before/After Examples -->
+      <div class="mb-5">
+        <p class="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-2">Examples — click a pair to load</p>
+        <div class="flex gap-3 flex-wrap">
+          <div onclick="loadCmpExample('/examples/deg_s0_r0.jpg','/examples/deg_s3_r0.jpg')"
+               class="flex gap-0.5 cursor-pointer group" title="Stage 0 (intact) → Stage 3 (severe)">
+            <img src="/examples/deg_s0_r0.jpg" class="h-14 w-20 object-cover rounded-l-lg ring-2 ring-transparent group-hover:ring-blue-400 transition-all"/>
+            <img src="/examples/deg_s3_r0.jpg" class="h-14 w-20 object-cover rounded-r-lg ring-2 ring-transparent group-hover:ring-red-400 transition-all"/>
+          </div>
+          <div onclick="loadCmpExample('/examples/deg_s0_r1.jpg','/examples/deg_s3_r1.jpg')"
+               class="flex gap-0.5 cursor-pointer group" title="Stage 0 (intact) → Stage 3 (severe)">
+            <img src="/examples/deg_s0_r1.jpg" class="h-14 w-20 object-cover rounded-l-lg ring-2 ring-transparent group-hover:ring-blue-400 transition-all"/>
+            <img src="/examples/deg_s3_r1.jpg" class="h-14 w-20 object-cover rounded-r-lg ring-2 ring-transparent group-hover:ring-red-400 transition-all"/>
+          </div>
+          <div onclick="loadCmpExample('/examples/deg_s0_r2.jpg','/examples/deg_s3_r2.jpg')"
+               class="flex gap-0.5 cursor-pointer group" title="Stage 0 (intact) → Stage 3 (severe)">
+            <img src="/examples/deg_s0_r2.jpg" class="h-14 w-20 object-cover rounded-l-lg ring-2 ring-transparent group-hover:ring-blue-400 transition-all"/>
+            <img src="/examples/deg_s3_r2.jpg" class="h-14 w-20 object-cover rounded-r-lg ring-2 ring-transparent group-hover:ring-red-400 transition-all"/>
+          </div>
+          <div onclick="loadCmpExample('/examples/deg_s1_r0.jpg','/examples/deg_s2_r0.jpg')"
+               class="flex gap-0.5 cursor-pointer group" title="Stage 1 (mild) → Stage 2 (moderate)">
+            <img src="/examples/deg_s1_r0.jpg" class="h-14 w-20 object-cover rounded-l-lg ring-2 ring-transparent group-hover:ring-yellow-400 transition-all"/>
+            <img src="/examples/deg_s2_r0.jpg" class="h-14 w-20 object-cover rounded-r-lg ring-2 ring-transparent group-hover:ring-orange-400 transition-all"/>
+          </div>
+        </div>
+        <p class="text-xs text-slate-300 mt-1.5">Synthetic progressive degradation · left = older · right = recent · hover highlights pair</p>
+      </div>
+
       <!-- Compare filter panel -->
       <div id="cmp-filter-panel" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
         <div class="flex items-center gap-2 mb-3">
@@ -763,6 +791,24 @@
       const res  = await fetch(src);
       const blob = await res.blob();
       addFiles([new File([blob], src.split('/').pop(), { type: blob.type })]);
+    }
+
+    async function loadCmpExample(beforeSrc, afterSrc) {
+      const [bRes, aRes] = await Promise.all([fetch(beforeSrc), fetch(afterSrc)]);
+      const [bBlob, aBlob] = await Promise.all([bRes.blob(), aRes.blob()]);
+      const bFile = new File([bBlob], beforeSrc.split('/').pop(), { type: bBlob.type });
+      const aFile = new File([aBlob], afterSrc.split('/').pop(), { type: aBlob.type });
+      for (const [side, file] of [['before', bFile], ['after', aFile]]) {
+        cmpFiles[side] = file;
+        const preview = document.getElementById('cmp-' + side + '-preview');
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+        document.getElementById('cmp-' + side + '-zone').classList.add('hidden');
+        document.getElementById('cmp-' + side + '-clear').classList.remove('hidden');
+      }
+      updateCompareBtn();
+      if (!Object.keys(cmpFilterPreviews).length) loadCmpFilterPreviews(bFile);
+      loadCmpAfterPreviews(aFile);
     }
 
     function addFiles(files) {
