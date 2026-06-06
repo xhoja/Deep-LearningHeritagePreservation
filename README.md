@@ -101,7 +101,7 @@ heritage-damage-assessment/
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
 │   ├── 02_detection.ipynb                   # YOLOv8l phase training on OmniCrack30K (Phase 2 test mAP@50 55.22% ✓)
-│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 97.51% ✓)
+│   ├── 03_segmentation.ipynb                # MAnet + mit_b2 segmentation (Crack IoU 96.23% ✓)
 │   │
 │   ├── ===== ANALYSIS NOTEBOOKS (experimental, supporting results) =====
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
@@ -263,7 +263,7 @@ python infer.py \
 | Detection v2 (OmniCrack30k phase training) | mAP@50 | >70% | val **70.30%** → test **55.22%** ✓ (YOLOv8l, 3-phase 320→640→1024px) |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
-| Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **97.51% Crack IoU ✓ / 98.64% Dice (threshold 0.70, reduces FP to 25.27%)** |
+| Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **96.23% Crack IoU ✓ / 98.08% Dice (threshold 0.60)** |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
 
@@ -318,14 +318,14 @@ Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + e
 
 | Metric | Test Result | Target | Status |
 |---|---|---|---|
-| **Crack IoU** | **97.51%** (threshold 0.70) | **> 80% ✓** | ✓ PASS |
+| **Crack IoU** | **96.23%** (threshold 0.60) | **> 80% ✓** | ✓ PASS |
 | mIoU (mean) | 85.67% | — | ✓ |
 | Dice (crack) | 98.08% | — | ✓ |
 | Background IoU | 75.11% | — | ✓ |
 
 **Previous baseline (v1 — U-Net + ResNet34):** mIoU 83.56%, Crack IoU 68.43%, Dice 81.26%
 
-**Improvement:** +40.3pp Crack IoU (+27.8pp vs SotA target). All three SotA thresholds exceeded. See `notebooks/03_segmentation.ipynb` for training curves, phase progressions, and prediction visualisations.
+**Improvement:** +27.8pp Crack IoU (+16.2pp vs SotA target of 80%). All three SotA thresholds exceeded. See `notebooks/03_segmentation.ipynb` for training curves, phase progressions, and prediction visualisations.
 
 
 ### Task 4 — Cross-Dataset Evaluation (`notebooks/04_cross_dataset_eval.ipynb`)
@@ -346,11 +346,11 @@ Graceful degradation. Masonry drop (~23 pp) consistent with the visual domain sh
 
 | Source subset | mIoU | Crack IoU | Dice |
 |---|---|---|---|
-| Combined test (in-distribution, OmniCrack30k) | **85.67%** | 97.51% | 98.08% |
+| Combined test (in-distribution, OmniCrack30k) | **85.67%** | 96.23% | 98.08% |
 | CrackForest subset (cross-domain) | **41.87%** | 2.43% | 4.74% |
 | Masonry subset (cross-domain) | **51.79%** | 17.30% | 29.50% |
 
-Strong in-distribution performance (Crack IoU 97.51%) but significant cross-domain drop — expected, as MAnet+mit_b2 was trained on OmniCrack30k (pavement/concrete cracks) and CrackForest/Masonry have structurally different crack morphologies. The segmentor generalises moderately better to masonry (wider, more continuous cracks) than CrackForest (thin, irregular road cracks). Qualitative inference on HistoricalCrack/cracked images shows plausible crack masks despite zero heritage-specific training data.
+Strong in-distribution performance (Crack IoU 96.23%) but significant cross-domain drop — expected, as MAnet+mit_b2 was trained on OmniCrack30k (pavement/concrete cracks) and CrackForest/Masonry have structurally different crack morphologies. The segmentor generalises moderately better to masonry (wider, more continuous cracks) than CrackForest (thin, irregular road cracks). Qualitative inference on HistoricalCrack/cracked images shows plausible crack masks despite zero heritage-specific training data.
 
 #### Detector (YOLOv8l, OmniCrack30k, 3-phase training) — mAP@50
 
@@ -435,7 +435,7 @@ Evaluated on Masonry + CrackForest combined (358 images) — both cross-domain r
 
 | Metric | Value | Notes |
 |---|---|---|
-| Crack IoU (hard) | 0.3524 | Cross-domain; in-dist = 97.51% (Task 3) |
+| Crack IoU (hard) | 0.3524 | Cross-domain; in-dist = 96.23% (Task 3) |
 | Background IoU | 0.8375 | Background mostly correct |
 | **2-class mIoU** | **0.5949** | Cross-domain degradation from in-dist 85.67% |
 | Dice (crack) | 0.4485 | |
@@ -443,7 +443,7 @@ Evaluated on Masonry + CrackForest combined (358 images) — both cross-domain r
 | % images > 0.80 2-class mIoU | 26.0% | |
 | % images < 0.50 crack IoU | 63.4% | Majority fails cross-domain |
 
-Cross-domain drop from 97.51% → 35.24% Crack IoU confirms the segmentor learned crack representations specific to OmniCrack30k's pavement/concrete texture. The in-distribution performance (97.51% Crack IoU, Task 3) far exceeds the SotA target; the cross-domain gap is the subject of ongoing analysis. Best/worst IoU visualisations use semi-transparent error overlays: **green = TP, red = FN, blue = FP**. Worst-case failures concentrate on thin hairline cracks in complex masonry textures with similar intensity to the crack.
+Cross-domain drop from 96.23% → 35.24% Crack IoU confirms the segmentor learned crack representations specific to OmniCrack30k's pavement/concrete texture. The in-distribution performance (96.23% Crack IoU, Task 3) far exceeds the SotA target; the cross-domain gap is the subject of ongoing analysis. Best/worst IoU visualisations use semi-transparent error overlays: **green = TP, red = FN, blue = FP**. Worst-case failures concentrate on thin hairline cracks in complex masonry textures with similar intensity to the crack.
 
 #### Cross-Task Consistency
 
