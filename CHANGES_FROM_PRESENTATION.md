@@ -204,6 +204,32 @@ README, report, webapp About page all updated to match.
 
 ---
 
+## 12. New: EDA Notebook (`00_eda.ipynb`) ✓ DONE
+
+Added a new exploratory data analysis notebook as the first notebook in the pipeline. All figures saved to `outputs/eda/`.
+
+**Key findings to highlight in the presentation:**
+
+| Finding | Slide relevance |
+|---|---|
+| 57,291 total images across 6 datasets | Opening dataset slide — replace old totals |
+| DACL10K class imbalance: Crack >> Wetspot (~3× more crack annotations) | Motivates focal loss; add to detection methods slide |
+| Crack pixel density median 1.31% (CrackForest) — extremely sparse | Justifies IoU over accuracy as segmentation metric |
+| OmniCrack30K: 22,158 training pairs, 256×256 bool masks | Update dataset table slide |
+| Spatial heatmap: defects uniformly distributed (no positional bias) | Data quality slide |
+| RGB histogram shift: DACL10K/CrackForest vs StructDamage | Motivates ImageNet normalisation + domain adaptation narrative |
+| t-SNE: CrackForest/HistoricalCrack/Masonry cluster separately | Feature space separation slide / cross-domain explanation |
+
+**Slides to add/update:**
+- Add a "Dataset Overview" slide with the horizontal bar chart (`01_dataset_overview.png`)
+- Add the DACL10K class distribution + bbox scatter (`04_detection_stats.png`)
+- Add the segmentation gallery (`07_segmentation_gallery.png`) — visually strong slide
+- Add the spatial heatmap (`05_bbox_heatmap.png`) if slide count allows
+- Update any dataset totals (was 27,274 → now 57,291 including OmniCrack30K)
+
+---
+
 ## Pending
 
 - [ ] PowerPoint — update slides using tables above (detection, segmentation, cross-dataset, failure analysis, notebook numbers)
+- [ ] PowerPoint — add EDA slides (dataset overview bar chart, DACL10K class dist, segmentation gallery)

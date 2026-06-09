@@ -222,6 +222,86 @@ OmniCrack30k is the largest publicly available crack detection benchmark, with a
 
 DACL10k v2 is a bridge structural damage dataset with polygon-annotated images across 19 damage classes. For this project, 5 architecturally significant classes are retained: crack, efflorescence, spalling, weathering, and wetspot. Polygon annotations are converted to axis-aligned YOLO bounding boxes. The training set contains 6,935 images with 20,971 bounding boxes across the 5 selected classes; the validation set contains 975 images with 3,223 boxes.
 
+\subsection{Exploratory Data Analysis}
+\label{subsec:eda}
+
+Across all six datasets the pipeline uses 57,291 annotated images (Table~\ref{tab:datasets_full}).
+Several characteristics identified during exploration directly motivated design decisions.
+
+\begin{table}[H]
+\centering
+\caption{Full dataset inventory including splits. OmniCrack30k uses \texttt{training}/\texttt{validation}/\texttt{test} subdirectory naming.}
+\label{tab:datasets_full}
+\rowcolors{2}{lightgray}{white}
+\begin{tabular}{p{3.2cm}p{2.4cm}rrrl}
+\toprule
+\rowcolor{white}
+\textbf{Dataset} & \textbf{Task} & \textbf{Train} & \textbf{Val} & \textbf{Test} & \textbf{Total} \\
+\midrule
+StructDamage        & Classification  & 10,290 & 2,204 & 2,208 & 14,702 \\
+HistoricalCrack     & Classification  & 3,896  & —     & —     & 3,896  \\
+DACL10k v2          & Detection       & 6,935  & 975   & —     & 7,910  \\
+Heritage Defect     & Detection       & —      & —     & —     & 408    \\
+CrackForest         & Segmentation    & 118    & —     & —     & 118    \\
+Masonry             & Segmentation    & 240    & —     & —     & 240    \\
+OmniCrack30k        & Segmentation / Detection & 22,158 & 3,277 & 4,582 & 30,017 \\
+\midrule
+\textbf{Total}      &                 & \textbf{43,637} & \textbf{6,456} & \textbf{6,790} & \textbf{57,291} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Class imbalance in DACL10k.}
+Parsing all 6,935 YOLO label files reveals a pronounced long-tail class distribution (Figure~\ref{fig:dacl_class_dist}).
+The \textit{crack} class accounts for the majority of annotations, while \textit{wetspot} has roughly one third as many instances.
+This imbalance motivates the use of focal loss during YOLOv8l training and class-specific confidence thresholds during evaluation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../outputs/eda/04_detection_stats.png}
+\caption{DACL10k training set: class distribution (left), normalised bounding-box width/height scatter coloured by class (centre), and annotations-per-image histogram with mean indicated (right). The class imbalance and the concentration of small bounding boxes (width/height $<$ 0.1) inform both the loss function choice and the use of SAHI tiled inference.}
+\label{fig:dacl_class_dist}
+\end{figure}
+
+\textbf{Crack pixel sparsity.}
+Computing the crack pixel density $\rho = \frac{1}{HW}\sum_{i,j}\mathbf{1}[M(i,j)=1]$ for every mask in the
+segmentation datasets reveals a strongly right-skewed distribution: CrackForest has a median $\rho = 1.31\%$
+and Masonry a median $\rho \approx 3\%$.
+This extreme class imbalance at pixel level (up to 99:1 background-to-crack ratio) is the primary reason pixel
+accuracy is a misleading metric — a model predicting all pixels as background achieves $>$98\% accuracy yet
+Intersection-over-Union of zero.
+Tversky loss with $\alpha = 0.7$ (penalising false negatives more than false positives) directly addresses this.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../outputs/eda/07_segmentation_gallery.png}
+\caption{Segmentation gallery: original image, ground-truth binary mask, and red-channel overlay. $\rho$ values annotated on each mask.}
+\label{fig:seg_gallery}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../outputs/eda/08_crack_density.png}
+\caption{Crack pixel density distribution across CrackForest, Masonry, and OmniCrack30k (300-image sample). All three datasets are right-skewed, confirming that IoU is the appropriate evaluation metric.}
+\label{fig:crack_density}
+\end{subfigure}
+\caption{Segmentation dataset analysis.}
+\end{figure}
+
+\textbf{Spatial annotation distribution.}
+Aggregating bounding-box centres from all 20,971 DACL10k training annotations into a $80\times80$ heatmap
+(Gaussian-smoothed, $\sigma=2$) shows a near-uniform spatial distribution with a mild tendency towards the
+image centre-bottom.
+No strong positional bias was found, indicating that the dataset does not trivially reward spatial priors.
+
+\textbf{Domain shift.}
+RGB channel histograms reveal that DACL10k and CrackForest images are greyer and have lower saturation than
+StructDamage (concrete vs. general building photography).
+This motivates the use of ImageNet normalisation
+$\hat{x}_c = (x_c - \mu_c)/\sigma_c$ with $\boldsymbol{\mu}=(0.485, 0.456, 0.406)$ and
+$\boldsymbol{\sigma}=(0.229, 0.224, 0.225)$, which maps each dataset's pixel distribution closer to the
+ImageNet statistics assumed by the pre-trained backbone weights.
+
 %% ════════════════════════════════════════════════════════════
 \clearpage
 \section{Pipeline Overview}
