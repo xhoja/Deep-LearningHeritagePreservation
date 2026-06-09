@@ -4,6 +4,33 @@
 > **Master's Project — Computer Vision**  
 > Motivated by the preservation of UNESCO-listed sites in Albania (Berat, Gjirokastër, Butrint)
 
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8l-Detection-00BFFF?logo=ultralytics&logoColor=white)
+![EfficientNet](https://img.shields.io/badge/EfficientNet--B4-Classification-FF6F00?logo=tensorflow&logoColor=white)
+![MAnet](https://img.shields.io/badge/MAnet%2FMiT--B2-Segmentation-34A853?logoColor=white)
+
+---
+
+## Tech Stack & Models
+
+| Layer | Technology | Detail |
+|---|---|---|
+| **Classification** | EfficientNet-B4 | ImageNet pretrained, fine-tuned on HistoricalCrack18-19 — **99.83% accuracy** |
+| **Detection** | YOLOv8l | 3-phase progressive training (320→640→1024px) on OmniCrack30k — **63.01% TTA mAP@50** |
+| **Segmentation** | MAnet + MiT-B2 encoder | 3-phase progressive training (256→384→512px), Tversky+Lovász loss — **96.23% Crack IoU** |
+| **Backend** | Python 3.10+ / FastAPI | REST API serving all three models in parallel via ThreadPoolExecutor |
+| **Deep Learning** | PyTorch 2.x | Model training and inference |
+| **Segmentation Library** | segmentation-models-pytorch | MAnet + MiT-B2 architecture |
+| **Detection Library** | Ultralytics YOLOv8 | Training, inference, TTA |
+| **Explainability** | Grad-CAM++ (pytorch-grad-cam) | EfficientNet-B4 attention maps |
+| **Sliced Inference** | SAHI | Tiled detection for small crack localisation |
+| **Classical CV** | OpenCV | CLAHE, FFT high-pass, Gabor filter bank, SSIM |
+| **Frontend** | HTML / Tailwind CSS / Vanilla JS | Single-page webapp with before/after comparison mode |
+| **Training Platform** | Google Colab T4 GPU | All models trained on T4 (14 GB VRAM) |
+
+---
 
 ## Deliverables Checklist
 
@@ -196,10 +223,10 @@ python train_detector.py \
 
 ```bash
 python train_segmentor.py \
-  --data data/masonry data/crackforest \
+  --data data/crackforest data/omnicrack \
   --encoder mit_b2 \
-  --epochs 150 \
-  --img-size 384 \
+  --epochs 120 \
+  --img-size 512 \
   --output checkpoints/segmentor/
 ```
 
@@ -290,10 +317,10 @@ Validation mAP@50 = 0.5784 | Test mAP@50 = 0.4939
 Validation mAP@50 = **0.7030** | Test mAP@50 = **0.5522** ✓ (Best single phase)
 
 **Phase 3 (1024px, 30 epochs, fine-tune, batch=8):**  
-Test mAP@50 = 0.4360 (degraded — small batch size caused overfitting)
+Test mAP@50 = 0.4166 (degraded — high resolution with same batch size caused val/test gap)
 
 **Ensemble Evaluation (Phase 1+2+3):**  
-Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5028) + P3 (0.4360) = avg confidence 0.2499. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
+Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5522) + P3 (0.4166) = avg confidence 0.1920. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
 
 #### Multi-Class DACL10K Detector (Notebook 09)
 
@@ -312,7 +339,7 @@ Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + e
 
 **Finding:** Single-class training on mixed noisy data (notebook 02) fails. Multi-class on structured dacl10k (notebook 09) shows class-specific patterns (weathering best, wetspot worst) but overall ceiling is low (~13%). Root cause: detection task fundamentally harder than segmentation; thin cracks need high-res slicing (SAHI) for recall, but precision remains limited by dataset annotation quality and crack scale variation across sources.
 
-### Task 3 — Segmentation Results (MAnet + mit_b2, Masonry + CrackForest)
+### Task 3 — Segmentation Results (MAnet + mit_b2, Masonry + CrackForest + OmniCrack30k)
 
 **Final (v4 — 3-phase progressive training):** Trained on T4 GPU (Google Colab). Progressive training: Phase 1 (20ep, 256px, frozen encoder) → Phase 2 (70ep, 384px, unfrozen, WarmRestarts) → Phase 3 (30ep, 512px). Loss: Tversky (0.4) + Lovász (0.4) + Boundary BCE (0.2). Test-time augmentation (4 views) + morphological post-processing.
 
@@ -460,12 +487,12 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 
 **Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
 
-**Setup:** Same fine-tuned YOLOv8s checkpoint from Task 5. Adaptive slice size 256–512 px, 20% overlap, conf=0.25.
+**Setup:** Same fine-tuned YOLOv8l checkpoint from Task 5. Adaptive slice size 256–512 px, 20% overlap, conf=0.25.
 
 | Method | mAP@50 | Boxes predicted |
 |---|---|---|
-| Plain YOLOv8s (imgsz=640) | **28.0%** | Normal |
-| YOLOv8s + SAHI (adaptive 256–512 tiles) | **18.9%** | 32 across 54 images |
+| Plain YOLOv8l (imgsz=640) | **28.0%** | Normal |
+| YOLOv8l + SAHI (adaptive 256–512 tiles) | **18.9%** | 32 across 54 images |
 | Delta | **−9.2 pp** | — |
 
 **Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
@@ -591,8 +618,8 @@ Upload one or more images; all three models run in parallel via `ThreadPoolExecu
 | **Severity summary card** | CRITICAL / HIGH / MODERATE / LOW / NONE from model consensus (X/3 agree) with per-model breakdown |
 | **Classification card** | EfficientNet-B4 label + cracked % + tab switcher: Grad-CAM / Gabor Energy / Complexity Map |
 | **Surface texture analysis** | Gabor filter bank (6 orientations × 3 wavelengths) + local Laplacian std complexity map; scalar Complexity Score 0–100 |
-| **Detection card** | YOLOv8s + SAHI bounding boxes; sensitive fallback at conf=0.10; filter badge shown when preprocessing applied |
-| **Segmentation card** | U-Net/ResNet34 pixel mask; SVG arc gauge colour-coded by crack % (<5% green → >30% red) |
+| **Detection card** | YOLOv8l + SAHI bounding boxes; sensitive fallback at conf=0.10; filter badge shown when preprocessing applied |
+| **Segmentation card** | MAnet/mit_b2 pixel mask; SVG arc gauge colour-coded by crack % (<5% green → >30% red) |
 | **JSON report download** | Exports severity, classification, detection, segmentation, surface texture, and applied filter with timestamp |
 
 ### Preprocessing Filters
@@ -667,8 +694,8 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Project scoping and dataset identification
 - [x] Data download and preprocessing (all 4 datasets)
 - [x] Task 1: Classification — EfficientNet-B4, 99.83% acc, 99.56% F1, ≈100% AUC-ROC
-- [x] Task 2: Detection — YOLOv8s, val mAP@50=96.7%, test mAP@50=34.6% (cross-domain gap)
-- [x] Task 3: Segmentation — U-Net + ResNet34, mIoU=83.56%, Dice=81.26% (2-class, >80% ✓)
+- [x] Task 2: Detection — YOLOv8l, 3-phase progressive training (320→640→1024px); Phase 2 val mAP@50=70.30%, test mAP@50=55.22%; TTA mAP@50=63.01% (581-image test split, notebook 05)
+- [x] Task 3: Segmentation — MAnet + mit_b2, 3-phase progressive training; Crack IoU=96.23%, mIoU=85.67%, Dice=98.08% ✓
 - [x] Task 4: Cross-dataset evaluation — Grad-CAM, t-SNE feature space, performance heatmap
 - [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, combined 8.8% → 23.6% mAP@50 (+169%)
 - [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
