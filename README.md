@@ -132,7 +132,7 @@ heritage-damage-assessment/
 │   │
 │   ├── ===== ANALYSIS NOTEBOOKS (experimental, supporting results) =====
 │   ├── 04_cross_dataset_eval.ipynb          # Cross-domain evaluation + t-SNE / Grad-CAM / heatmap
-│   ├── 05_detector_finetuning.ipynb         # Overfitting reduction + TTA evaluation (63.01% TTA mAP@50 on val)
+│   ├── 05_detector_finetuning.ipynb         # Overfitting reduction + TTA + SAHI evaluation (63.01% TTA mAP@50)
 │   ├── 06_failure_analysis.ipynb            # Failure analysis & Grad-CAM++ across all three models
 │   ├── 07_classifier_finetuning.ipynb       # Classifier domain adaptation on heritage masonry data
 │   ├── 08_degradation_analysis.ipynb        # Synthetic temporal degradation + classical filter bank analysis
@@ -272,7 +272,7 @@ python infer.py \
 
 **Analysis notebooks** (experimental; directly support results tables below):
 - `04_cross_dataset_eval.ipynb` — Generalization metrics + Grad-CAM visualizations
-- `05_detector_finetuning.ipynb` — Reduce val→test overfitting gap + TTA/SAHI evaluation (63.01% TTA mAP@50)
+- `05_detector_finetuning.ipynb` — Reduce val→test performance gap + TTA/SAHI evaluation (63.01% TTA mAP@50)
 - `06_failure_analysis.ipynb` — Failure modes + Grad-CAM++ for all three models
 - `07_classifier_finetuning.ipynb` — Classifier heritage domain adaptation
 - `08_degradation_analysis.ipynb` — Synthetic temporal degradation + filter bank analysis
@@ -287,10 +287,13 @@ python infer.py \
 |---|---|---|---|
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
 | Classification (fine-tuned, heritage domain) | Accuracy, F1 | — | **99.4% combined / 98.1% heritage recall** |
-| Detection v2 (OmniCrack30k phase training) | mAP@50 | >70% | val **70.30%** → test **55.22%** ✓ (YOLOv8l, 3-phase 320→640→1024px) |
+| Detection v1 baseline (YOLOv8s, single-phase) | mAP@50 | — | val **96.7%** → test **34.6%** (not deployed — mixed DACL10K + OmniCrack30k data caused annotation noise that inflated val metrics) |
+| Detection v2 (YOLOv8l, 3-phase progressive) | mAP@50 | >70% | val **70.30%** → test **55.22%** → TTA **63.01%** ✓ |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
-| Segmentation (v4 final) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **96.23% Crack IoU ✓ / 98.08% Dice (threshold 0.60)** |
+| Segmentation v1 baseline (U-Net + ResNet34) | Crack IoU, mIoU | — | Crack IoU **68.43%** / mIoU **83.56%** / Dice **81.26%** |
+| Segmentation v2 intermediate (MAnet + mit_b2) | Crack IoU | — | peak val IoU **97.51%** — not deployed (masonry data quality issues caused 27–32% false positive rate on background) |
+| Segmentation v4 final (MAnet + mit_b2, 3-phase) | Crack IoU, mIoU, Dice | Crack IoU > 80% | **96.23% Crack IoU ✓ / 98.08% Dice (threshold 0.60)** |
 
 ### Task 1 — Classification Results (EfficientNet-B4, HistoricalCrack18-19)
 
@@ -392,7 +395,7 @@ Strong in-distribution performance (Crack IoU 96.23%) but significant cross-doma
 
 ### Task 5 — Detector Domain Adaptation & Model Selection (`notebooks/05_detector_finetuning.ipynb`)
 
-**Production detector — why YOLOv8l (3-phase, `02_detection.ipynb`):** The final production model is the **YOLOv8l trained with 3-phase progressive training** (320px → 640px → 1024px) on OmniCrack30k-only data, achieving **63.01% TTA mAP@50** on the 581-image test split. This replaced the earlier YOLOv8s baseline (34.59%) for three reasons: (1) larger backbone (YOLOv8l) provides better feature capacity for fine crack localisation; (2) phase training stabilises learning at increasing resolutions without overfitting; (3) removing mixed DACL10K data eliminated mask→box annotation noise that degraded single-class performance.
+**Production detector — why YOLOv8l (3-phase, `02_detection.ipynb`):** The final production model is the **YOLOv8l trained with 3-phase progressive training** (320px → 640px → 1024px) on OmniCrack30k-only data, achieving **63.01% TTA mAP@50** on the 581-image test split. This replaced the earlier YOLOv8s baseline (34.59%) for three reasons: (1) larger backbone (YOLOv8l) provides better feature capacity for fine crack localisation; (2) phase training stabilises learning at increasing resolutions; (3) removing mixed DACL10K data eliminated mask→box annotation noise that degraded single-class performance — the primary data quality issue.
 
 **Approach (domain adaptation):** Fine-tuned the OmniCrack30k YOLOv8l checkpoint on CrackForest + Masonry combined (358 images, stratified 70/15/15 split). Key hyperparameters: `freeze=10` (first 10 backbone layers frozen to preserve OmniCrack features), `lr0=0.001` (10× below default), 50 epochs, patience=15.
 
@@ -483,7 +486,9 @@ Cross-domain drop from 96.23% → 35.24% Crack IoU confirms the segmentor learne
 The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s (which fired on all 780 images). Agreement rises to 82.7%, demonstrating better calibration. Type B = 111 is the new critical failure mode: the detector silently misses cracks that the classifier flags — a consequence of the OmniCrack30k→HistoricalCrack domain gap. In the pipeline, the classifier gate still prevents most intact images from reaching the detector; the missed detections (FN) motivate domain adaptation fine-tuning (Task 5).
 
 
-### Task 7 — SAHI Sliced Inference Evaluation
+### Task 5b — SAHI Sliced Inference Evaluation (`notebooks/05_detector_finetuning.ipynb`)
+
+> Note: SAHI evaluation was previously a standalone notebook (`07_sahi_evaluation.ipynb`). It has been consolidated into `05_detector_finetuning.ipynb` — notebook 07 is now `07_classifier_finetuning.ipynb`.
 
 **Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
 
@@ -699,7 +704,7 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - [x] Task 4: Cross-dataset evaluation — Grad-CAM, t-SNE feature space, performance heatmap
 - [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, combined 8.8% → 23.6% mAP@50 (+169%)
 - [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
-- [x] Task 7: SAHI sliced inference evaluation — plain YOLO 28.0% vs SAHI 18.9% (SAHI underperforms on this domain)
+- [x] Task 5b: SAHI sliced inference evaluation (in `05_detector_finetuning.ipynb`) — plain YOLOv8l 28.0% vs SAHI 18.9% (SAHI underperforms on this domain; standalone notebook consolidated into nb05)
 - [x] Task 1b: Classifier domain adaptation — heritage cracked recall 71.2% → 98.1% after fine-tuning on masonry+crackforest
 - [x] Task 9: Synthetic temporal degradation analysis — Gabor/LoG/entropy/GLCM filter bank, SSIM change maps, degradation score, DL classifier validation (Pearson r=0.843)
 - [x] Task 10: DACL10k multi-class detector — YOLOv8s trained on dacl10k (~7k images, 5 classes: crack, efflorescence, spalling, weathering, wetspot); mAP@50 13.5% overall (weathering 22.7%, spalling 16.2%, crack 12.7%); freeze=10, 50 epochs on T4
