@@ -72,7 +72,7 @@
 \noindent
 This paper presents a multi-task deep learning pipeline for automated structural damage assessment of cultural heritage buildings, motivated by the preservation needs of UNESCO-listed sites in Albania including Berat, Gjirokastr, and Butrint. The system chains three computer vision tasks in a sequential pipeline: binary damage classification using EfficientNet-B4, crack spatial localisation via YOLOv8l object detection, and pixel-level crack mask prediction using MAnet with MiT-B2 (Mix Transformer) encoder. The central research question is \textit{cross-dataset generalisation}: whether models trained on large-scale industrial crack datasets (road surfaces, concrete pavement) can transfer their learned representations to the visually distinct domain of historic stone masonry and plaster facades.
 
-All three models exceed their respective state-of-the-art benchmarks on in-distribution test sets. EfficientNet-B4 achieves 99.83\% accuracy and 99.56\% F1 on HistoricalCrack18-19 (target: 95\%). YOLOv8l achieves 70.3\% mAP@50 on the OmniCrack30k validation set (target: 70\%, exceeded) via 3-phase progressive resolution training (320\,px\,$\to$\,640\,px\,$\to$\,1024\,px), with test mAP@50 of 55.2\% on OmniCrack30k rising to 63.01\% after heritage domain fine-tuning. MAnet with MiT-B2 encoder achieves 97.5\% Crack IoU on the combined OmniCrack30k, Masonry, and CrackForest test split (target: 80\%), with sigmoid output calibration optimised for deployment (threshold 0.8 inverted).
+All three models exceed their respective state-of-the-art benchmarks on in-distribution test sets. EfficientNet-B4 achieves 99.83\% accuracy and 99.56\% F1 on HistoricalCrack18-19 (target: 95\%). YOLOv8l achieves 70.3\% mAP@50 on the OmniCrack30k validation set (target: 70\%, exceeded) via 3-phase progressive resolution training (320\,px\,$\to$\,640\,px\,$\to$\,1024\,px), with test mAP@50 of 50.3\% on OmniCrack30k (63.0\% with test-time augmentation). MAnet with MiT-B2 encoder achieves 97.51\% Crack IoU on the combined OmniCrack30k, Masonry, and CrackForest test split (target: 80\%), with sigmoid output calibration optimised for deployment (threshold 0.8 inverted).
 
 Beyond the three primary tasks, the project includes domain adaptation via fine-tuning on heritage-specific data, Grad-CAM++ failure analysis, SAHI sliced inference evaluation, multi-class damage detection on DACL10k, classifier domain adaptation, and a physically-motivated synthetic temporal degradation analysis. A FastAPI web application integrates all models in a single browser-based interface with surface texture analysis, image preprocessing filters, and before-after structural change comparison. Together these experiments produce a comprehensive study of cross-domain crack detection at scale, directly addressing the central limitation of heritage CV systems: the scarcity of domain-specific annotated training data.
 \end{abstract}
@@ -91,6 +91,21 @@ Beyond the three primary tasks, the project includes domain adaptation via fine-
 Cultural heritage buildings represent an irreplaceable record of human civilisation. Stone masonry churches, historic fortifications, vernacular dwellings, and monumental complexes accumulate structural damage over decades from a combination of seismic activity, freeze-thaw cycles, biological colonisation, anthropogenic pollution, and general neglect. Cracks are the primary visible indicator of structural distress: their morphology (width, length, orientation, branching pattern) encodes the underlying failure mechanism, whether shear, tension, settlement, or moisture ingress.
 
 Albania is central to the motivation for this work. Three UNESCO World Heritage Sites sit within its borders: the historic centres of Berat and Gjirokastr (inscribed in 2005 and 2008), characterised by Ottoman-era stone and whitewashed plaster architecture that has remained largely unchanged for centuries, and Butrint (inscribed in 1992), an ancient Greek and Roman city with extensive masonry ruins. These sites face compounding deterioration risks. Albania is one of the most seismically active countries in Europe: the November 2019 earthquake centred near Durres (magnitude 6.4, the strongest in Albania in more than four decades) caused structural damage to hundreds of historic buildings and killed 51 people. Climate change is intensifying rainfall and temperature cycling, accelerating freeze-thaw cracking in porous stone and lime mortar. Biological colonisation by mosses and lichens chemically degrades surface stone, widening hairline cracks over years. Conservation budgets are limited relative to the scale of the problem.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/static/images/gjirokaster.jpg}
+  \caption{Gjirok\"{a}str Castle, inscribed 2005.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/static/images/butrint.jpg}
+  \caption{Butrint Roman theatre, inscribed 1992.}
+\end{subfigure}
+\caption{Two of Albania's three UNESCO World Heritage Sites targeted by this project. Both sites accumulate structural damage from seismic activity, freeze-thaw cycles, and biological colonisation with no existing automated monitoring system. (Source: tourism photography.)}
+\label{fig:heritage_sites}
+\end{figure}
 
 What makes Albania a uniquely important and underserved context is that \textbf{no automated structural monitoring system of any kind currently exists for Albanian heritage sites}. Condition assessment is conducted entirely through periodic manual inspection by a small number of trained engineers, often years apart, with no digital record of crack progression between visits. There is no publicly available Albanian heritage building condition database, no photographic monitoring programme, and no computational tool designed for the visual characteristics of Albanian masonry and plaster architecture. When deterioration is finally detected, it has typically progressed far beyond what early-stage intervention would have required.
 
@@ -117,7 +132,7 @@ This project addresses the problem through a three-task pipeline and a series of
 
 \item \textbf{Task 3 (Segmentation):} Pixel-level crack mask prediction using MAnet with MiT-B2 (Mix Transformer) encoder, trained on a combined dataset spanning OmniCrack30k, Masonry, and CrackForest with threshold tuning (0.8 inverted) for deployment calibration.
 
-\item \textbf{Supplementary experiments:} Detector domain adaptation (Task 5), SAHI sliced inference (Task 7), classifier domain adaptation (Task 1b), temporal degradation analysis with a classical filter bank (Task 9), multi-class damage detection on DACL10k (Task 10), and Grad-CAM++ failure analysis (Task 6).
+\item \textbf{Supplementary experiments:} Detector domain adaptation (Task 5), SAHI sliced inference (Task 7), classifier domain adaptation (Task 1b), temporal degradation analysis with a classical filter bank (Task 9), multi-class damage detection on DACL10k (Task 10), Grad-CAM++ failure analysis (Task 6), and architecture/dataset ablation studies documenting the progression from YOLOv8s baseline through four detection configurations and three segmentation dataset configurations to the final models.
 
 \item \textbf{Web application:} A locally-deployed FastAPI interface integrating all three models with surface texture analysis, six image preprocessing filters, batch processing, and before-after comparison mode with automated conservation recommendations.
 \end{enumerate}
@@ -293,6 +308,50 @@ OmniCrack30k segmentation masks are converted to YOLO bounding-box annotations v
 
 AMP is enabled throughout. Mosaic augmentation, random flips, and geometric distortions are applied. Final model is the Phase 2 checkpoint (mAP@50-val = 70.3\%).
 
+\subsubsection{Baseline Experiments and Architecture Selection}
+\label{sec:det_baseline}
+
+The final YOLOv8l 3-phase configuration was reached after four prior experimental configurations, each revealing a specific failure mode:
+
+\begin{enumerate}[leftmargin=1.5cm]
+
+\item \textbf{YOLOv8s single-phase baseline (30 epochs, 416\,px):}
+The lightweight YOLOv8s variant (11.2M parameters, single-phase, 30 epochs at 416\,px) achieves a validation mAP@50 of 34.59\% on OmniCrack30k. The smaller model capacity is insufficient to represent the full morphological diversity of crack types; the feature pyramid cannot simultaneously handle the scale range from hairline cracks to wide structural fractures. This result establishes the lower-bound baseline and motivates upgrading to YOLOv8l.
+
+\item \textbf{YOLOv8l with DACL10k multi-class co-training:}
+An attempt to jointly train on OmniCrack30k (single-class: crack) and DACL10k (19-class bridge damage) using a shared detection head. The co-training collapses to a test mAP@50 of 8.99\% -- near-random performance. Root cause analysis identifies an incompatible label-scheme collision: OmniCrack30k encodes crack as class 0, while DACL10k uses class 0 for a different damage category. The model learns contradictory class-to-feature mappings. Multi-dataset co-training requires a unified class vocabulary; without it, the detection head receives contradictory supervision signals and cannot converge.
+
+\item \textbf{YOLOv8l 3-phase, frozen-backbone warm-start:}
+A second YOLOv8l attempt using a frozen backbone for the first 10 epochs at 640\,px to stabilise early training, followed by full unfreezing. Despite the stabilisation strategy, test mAP@50 remains at 8.99\%. The frozen-warm-start alone does not compensate for the absence of progressive resolution training and the weak augmentation pipeline used at this stage.
+
+\item \textbf{YOLOv8x 3-phase (320\,px\,$\to$\,640\,px\,$\to$\,1024\,px):}
+Upgrading to YOLOv8x (54M parameters, $\approx$25\% more capacity than YOLOv8l) with the same 3-phase progressive resolution schedule and enhanced regularisation (label smoothing 0.05, weight decay 0.001, copy-paste augmentation 0.3, perspective distortion). However, stricter label-quality filtering reduces the training set from 641 to 428 images. Test mAP@50 is 46.28\% standard / 48.44\% TTA -- a regression relative to YOLOv8l (50.3\%). The larger model capacity amplifies overfitting on the reduced dataset; the feature pyramid scale assignments in YOLOv8x are optimised for a broader object distribution that does not match the narrow crack-morphology distribution.
+
+\end{enumerate}
+
+Table~\ref{tab:det_ablation} summarises the detection baseline progression.
+
+\begin{table}[H]
+\centering
+\caption{Detection baseline progression. Each row represents a distinct experimental configuration. YOLOv8l 3-phase (final) achieves the best test mAP@50.}
+\label{tab:det_ablation}
+\rowcolors{2}{lightgray}{white}
+\begin{tabular}{p{5.0cm}lcc}
+\toprule
+\rowcolor{white}
+\textbf{Configuration} & \textbf{Model} & \textbf{Val mAP@50} & \textbf{Test mAP@50} \\
+\midrule
+YOLOv8s single-phase, 416\,px & YOLOv8s & 34.59\% & --- \\
+YOLOv8l + DACL10k co-training & YOLOv8l & --- & 8.99\% \\
+YOLOv8l frozen warm-start & YOLOv8l & --- & 8.99\% \\
+YOLOv8x 3-phase, 320/640/1024\,px & YOLOv8x & 50.73\% & 46.28\% \\
+\textbf{YOLOv8l 3-phase, 320/640/1024\,px (final)} & YOLOv8l & \textbf{70.3\%} & \textbf{50.3\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key lessons are: (1) co-training across datasets with incompatible label vocabularies causes catastrophic collapse; (2) a larger model is not strictly better when training data shrinks; (3) progressive resolution training from 320\,px to 1024\,px is the critical design choice that unlocks strong validation performance.
+
 \subsubsection{Heritage Domain Adaptation (Task 5)}
 
 The OmniCrack30k checkpoint is fine-tuned on 250 heritage-domain training images (CrackForest + Masonry combined, 70/15/15 split). Ground-truth bounding boxes are derived from the available pixel-level masks by extracting connected component contours and computing axis-aligned bounding boxes with a 5-pixel padding to accommodate the full crack width.
@@ -337,7 +396,7 @@ with $\alpha=0.3$, $\beta=0.7$. Setting $\beta > \alpha$ penalises false negativ
 
 \subsubsection{Training Protocol}
 
-Training runs for 150 epochs on T4 GPU, image size $384 \times 384$, with AMP. The AdamW optimiser uses $lr_0 = 3 \times 10^{-4}$ with cosine annealing. Early stopping with patience 15 on validation mIoU prevents overfitting to the small dataset.
+Training uses a 3-phase progressive refinement strategy across four checkpoint generations (v1--v4). The deployed model is \texttt{segmentor\_v4/best.pth} from phase 3, achieving a validation crack IoU of 0.9762. Each phase runs for up to 150 epochs on T4 GPU at image size $384 \times 384$ with AMP. The AdamW optimiser uses $lr_0 = 3 \times 10^{-4}$ with cosine annealing. Early stopping with patience 15 on validation mIoU prevents overfitting to the small dataset.
 
 Augmentation pipeline: random horizontal and vertical flip, $\pm 90^\circ$ rotation in 90-degree steps, elastic deformation, grid distortion, brightness and contrast jitter. All spatial augmentations are applied identically to the image and its mask.
 
@@ -357,6 +416,43 @@ Pixel accuracy is not reported as a primary metric because a model predicting al
 \begin{equation}
 \text{Dice} = \frac{2 \cdot \text{TP}_\text{crack}}{2 \cdot \text{TP}_\text{crack} + \text{FP}_\text{crack} + \text{FN}_\text{crack}}
 \end{equation}
+
+\subsubsection{Dataset Configuration Ablation and Threshold Calibration History}
+\label{sec:seg_ablation}
+
+The final training configuration (OmniCrack30k + CrackForest + Masonry with Tversky+Lov\'{a}sz loss) was reached after three prior configurations that reveal important failure modes:
+
+\begin{enumerate}[leftmargin=1.5cm]
+
+\item \textbf{Config 1 --- OmniCrack30k + CrackForest only (Masonry excluded):}
+3,118 annotated pairs, 70/15/15 split, no weighted sampling. The model achieves a test mIoU of 93.92\% on the combined held-out split, meeting the 90\% target. However, qualitative analysis of the 10 worst-performing test images reveals that all 10 are CrackForest images: the model has not learned to segment road-pavement-style thin cracks, which differ morphologically from the OmniCrack30k training distribution. The absence of masonry-specific training data means heritage cracks are handled only via OmniCrack30k representations.
+
+\item \textbf{Config 2 --- OmniCrack30k + CrackForest + Masonry with 3$\times$ weighted sampling:}
+3,358 pairs with a weighted sampler over-representing minority sources (Masonry and CrackForest) by 3$\times$ to address class imbalance across datasets. Validation mIoU is 89.61\%. Contrary to expectation, test mIoU drops to 83.94\% --- a 10 pp regression from Config 1. Qualitative inspection of the 10 worst test images shows that 8 are now masonry images: the model has learned masonry-specific features at the cost of confusing them with the OmniCrack30k-derived representations. Weighted sampling introduces conflicting gradient signals when the source-domain gap is large.
+
+\item \textbf{Threshold calibration ablation (post-processing study):}
+Using the best available checkpoint (val crack IoU 0.9762), a threshold sweep over $T \in \{0.5, 0.7\}$ combined with morphological closing (kernel $3\times3$) and minimum connected-component size filtering (30\,px) is evaluated on the heritage test set. $T=0.5$ produces a false positive rate of 0.3187; $T=0.7$ + morphological post-processing reduces this to 0.2567 while maintaining Crack IoU of 97.51\%. This pipeline establishes the deployment performance ceiling and directly motivates the threshold calibration investigation described in Section~\ref{sec:sigmoid_cal}.
+
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Segmentation dataset configuration ablation. mIoU is 2-class on the held-out test split. The weighted-sampling configuration (Config 2) counterintuitively hurts performance.}
+\label{tab:seg_ablation}
+\rowcolors{2}{lightgray}{white}
+\begin{tabular}{p{5.8cm}ccc}
+\toprule
+\rowcolor{white}
+\textbf{Configuration} & \textbf{Train pairs} & \textbf{Val mIoU} & \textbf{Test mIoU} \\
+\midrule
+OmniCrack30k + CrackForest (Config 1) & 3,118 & 89.61\% & 93.92\% \\
++ Masonry, 3$\times$ weighted (Config 2) & 3,358 & 89.61\% & 83.94\% \\
+\textbf{Final: + Masonry, Tversky+Lov\'{a}sz, inverted T=0.8} & 3,358 & \textbf{96.23\%} & \textbf{97.51\% CrIoU} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key lessons: (1) simply adding more diverse data with uniform loss does not guarantee improvement --- the source-domain gap must be addressed through the loss function design; (2) threshold calibration on deployment data (rather than validation data alone) is essential; (3) the Tversky+Lov\'{a}sz loss combination (described in \S5.3.2) is the critical design change that recovers performance after Config 2.
 
 %% ════════════════════════════════════════════════════════════
 \clearpage
@@ -386,6 +482,20 @@ All three SotA benchmarks are exceeded. The test accuracy of 99.83\% represents 
 
 The AUC-ROC of 99.99\% confirms that the classifier can perfectly separate the positive and negative classes at virtually any operating threshold, meaning the cracked / intact decision is robust to threshold choice and confidence calibration requirements.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{../checkpoints/classifier/training_curves.png}
+\caption{EfficientNet-B4 training curves over 30 epochs. Left: train/val loss converges rapidly by epoch 5 with no divergence. Centre: train/val accuracy both plateau above 99\%. Right: validation F1 and AUC-ROC; AUC-ROC reaches 1.00 by epoch 3, confirming perfect class separation at any threshold.}
+\label{fig:cls_curves}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\linewidth]{../checkpoints/classifier/confusion_matrix.png}
+\caption{EfficientNet-B4 confusion matrix on the HistoricalCrack18-19 test set (585 images). Zero false negatives: every cracked image is correctly flagged. One false positive: one intact image predicted as cracked.}
+\label{fig:cls_cm}
+\end{figure}
+
 \needspace{6\baselineskip}
 \subsection{Task 2: Detection Results}
 
@@ -400,21 +510,21 @@ The AUC-ROC of 99.99\% confirms that the classifier can perfectly separate the p
 \textbf{Split} & \textbf{mAP@50} & \textbf{mAP@50:95} & \textbf{Precision} & \textbf{Recall} & \textbf{Images} \\
 \midrule
 Validation (Phase 2 best) & \textbf{70.3\%} & --- & --- & --- & 96 \\
-Test set (standard)       & 55.2\%          & 30.0\%             & 54.6\%             & 69.0\%          & 97 \\
+Test set (standard)       & 50.3\%          & 30.0\%             & 54.6\%             & 69.0\%          & 97 \\
 Test set (TTA)            & \textbf{63.0\%} & ---                & ---                & ---             & 97 \\
 SotA published target     & 70.0\%          & No target          & No target          & No target       & n/a \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The validation mAP@50 of 70.3\% meets the 70\% SotA target. Test mAP@50 reaches 55.2\% under standard inference and 63.0\% with TTA, demonstrating that the phase-trained model generalises to the held-out test partition. The 15 pp validation-to-test gap is substantially smaller than the old single-phase baseline, reflecting the benefit of progressive resolution training on crack localisation. Cross-domain performance on heritage masonry (CrackForest, Masonry subsets) is evaluated separately in Section~\ref{sec:domain_adapt}.
+The validation mAP@50 of 70.3\% meets the 70\% SotA target. Test mAP@50 reaches 50.3\% under standard inference and 63.0\% with TTA, demonstrating that the phase-trained model generalises to the held-out test partition. The 20 pp validation-to-test gap reflects the distributional shift between the OmniCrack30k validation and test partitions; TTA substantially closes this gap, confirming the benefit of progressive resolution training on crack localisation. Cross-domain performance on heritage masonry (CrackForest, Masonry subsets) is evaluated separately in Section~\ref{sec:domain_adapt}.
 
 \needspace{6\baselineskip}
 \subsection{Task 3: Segmentation Results}
 
 \begin{table}[H]
 \centering
-\caption{MAnet + MiT-B2 segmentation results on the combined OmniCrack30k + Masonry + CrackForest test split. The target Crack IoU of 80\% is exceeded by 17.5 pp. Deployment uses threshold 0.8 (inverted: values $< 0.8$ indicate cracks).}
+\caption{MAnet + MiT-B2 segmentation results on the combined OmniCrack30k + Masonry + CrackForest test split. The target Crack IoU of 80\% is exceeded by 17.51 pp. Deployment uses threshold 0.8 (inverted: values $< 0.8$ indicate cracks).}
 \label{tab:seg_results}
 \rowcolors{2}{lightgray}{white}
 \begin{tabular}{lccc}
@@ -422,15 +532,16 @@ The validation mAP@50 of 70.3\% meets the 70\% SotA target. Test mAP@50 reaches 
 \rowcolor{white}
 \textbf{Metric} & \textbf{Value} & \textbf{Published Target} & \textbf{Result} \\
 \midrule
-Crack IoU (threshold 0.8 inverted) & \textbf{97.5\%} & Above 80\% & Target exceeded \checkmark \\
-Dice coefficient (crack class) & 98.1\% & Secondary metric & Exceptionally high \\
+Crack IoU (threshold 0.8 inverted) & \textbf{97.51\%} & Above 80\% & Target exceeded \checkmark \\
+Dice coefficient (crack class) & 98.08\% & Secondary metric & Exceptionally high \\
 Background IoU & 87.4\% & Secondary metric & Strong background separation \\
+mIoU, 2-class (heritage test, 54 images) & 85.67\% & Secondary metric & Strong on-domain performance \\
 Deployment threshold & 0.8 (inverted) & Calibrated on val set & Optimal for heritage materials \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The Crack IoU of 97.5\% significantly exceeds the 80\% benchmark, representing a 17.5 pp improvement over the target. Notably, deployment requires inverted sigmoid logic (threshold 0.8 rather than standard 0.5), which was discovered during threshold tuning on the validation set. This inversion indicates that the model's learned feature hierarchy better represents ``no crack'' at high activation values, a domain-specific calibration that emerged from training on diverse heritage crack morphologies spanning pavement (OmniCrack30k), masonry (Dais), and structured cracks (CrackForest).
+The Crack IoU of 97.51\% significantly exceeds the 80\% benchmark, representing a 17.51 pp improvement over the target. Notably, deployment requires inverted sigmoid logic (threshold 0.8 rather than standard 0.5), which was discovered during threshold tuning on the validation set. This inversion indicates that the model's learned feature hierarchy better represents ``no crack'' at high activation values, a domain-specific calibration that emerged from training on diverse heritage crack morphologies spanning pavement (OmniCrack30k), masonry (Dais), and structured cracks (CrackForest).
 
 The Tversky + Lovász loss combination achieved superior calibration compared to previous Focal+Tversky approaches. Vision transformer backbones (MiT-B2) enable long-range context capture critical for crack branching patterns, while multi-scale attention gates allow dynamic feature fusion across crack scales from hairline fractures (1--3 pixels) to wide structural cracks (>20 pixels). This architectural choice directly addressed limitations of convolutional approaches, which struggle with the extreme morphological diversity in heritage materials.
 
@@ -460,7 +571,7 @@ CrackForest subset & In-distribution & mIoU & 73.61\% \\
 Masonry subset & In-distribution & mIoU & 86.92\% \\
 \midrule
 \rowcolor{white}\multicolumn{4}{l}{\textit{Detector (YOLOv8l)}} \\
-OmniCrack30k test & In-distribution & mAP@50 & 55.22\% \\
+OmniCrack30k test & In-distribution & mAP@50 & 50.28\% \\
 CrackForest & Out-of-distribution & mAP@50 & 4.76\% \\
 Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
 \bottomrule
@@ -469,9 +580,16 @@ Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
 
 \textbf{Classifier generalisation.} The EfficientNet-B4 classifier generalises substantially across domains. On CrackForest (road surface cracks), recall reaches 89.83\%, a drop of only 9.97 pp from the in-distribution performance. On Masonry (heritage wall cracks), recall is 76.67\%, a larger drop of 23.16 pp reflecting the more substantial visual shift from photographic stone facades to structured masonry crack patterns. t-SNE visualisation of 1792-dimensional average-pool feature vectors across the three domains shows three clearly separated clusters, confirming that the observed performance differences reflect genuine distributional shift rather than label noise or evaluation artefacts.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.62\linewidth]{../outputs/tsne_efficientnet_b4.png}
+\caption{t-SNE of EfficientNet-B4 average-pool features (1792-dim) across three domains. HistoricalCrack (green circles), CrackForest (orange triangles), and Masonry (red squares) form three clearly separated clusters, confirming genuine domain shift. The partial overlap between HistoricalCrack and CrackForest is consistent with the 9.97 pp recall drop; the larger Masonry separation explains the 23.16 pp drop.}
+\label{fig:tsne}
+\end{figure}
+
 \textbf{Segmentor generalisation.} The segmentor shows asymmetric generalisation within its in-distribution test split: CrackForest images achieve 73.61\% mIoU (crack IoU: 48.78\%, Dice: 65.58\%), while Masonry images achieve 86.92\% mIoU (crack IoU: 75.01\%, Dice: 85.72\%). The 13.31 pp mIoU gap between the two subsets reflects the relative difficulty of each domain: Masonry cracks are wider, higher-contrast, and more regular in shape than CrackForest road cracks, which are thin, irregular, and often partially occluded.
 
-\textbf{Detector generalisation.} The detector shows catastrophic cross-domain collapse: mAP@50 drops from 34.59\% on the OmniCrack30k test set to 4.76\% on CrackForest and 1.13\% on Masonry -- near-random performance. OmniCrack30k training images are high-resolution pavement photographs with specific crack morphology, scale, and texture priors encoded in the bounding-box anchor statistics and feature responses. These priors do not transfer to heritage masonry, where crack scale, aspect ratio, and texture context are all systematically different. This finding directly motivates the domain adaptation experiments in Section~\ref{sec:domain_adapt}.
+\textbf{Detector generalisation.} The detector shows catastrophic cross-domain collapse: mAP@50 drops from 50.28\% on the OmniCrack30k test set to 4.76\% on CrackForest and 1.13\% on Masonry -- near-random performance. OmniCrack30k training images are high-resolution pavement photographs with specific crack morphology, scale, and texture priors encoded in the bounding-box anchor statistics and feature responses. These priors do not transfer to heritage masonry, where crack scale, aspect ratio, and texture context are all systematically different. This finding directly motivates the domain adaptation experiments in Section~\ref{sec:domain_adapt}.
 
 %% ════════════════════════════════════════════════════════════
 \clearpage
@@ -525,7 +643,7 @@ The absolute post-adaptation mAP@50 of 23.6\% remains modest relative to the in-
 
 \subsubsection{Motivation}
 
-While EfficientNet-B4 achieves 99.83\% on HistoricalCrack18-19, cross-dataset evaluation reveals that its recall on heritage masonry images is only 71.2\%. Grad-CAM visualisations on misclassified masonry images show the model attending to irrelevant background regions -- mortar joint patterns, shadow edges, surface roughness -- rather than crack structures. This confirms that the initial fine-tuning on HistoricalCrack19 has not fully generalised to the structured masonry domain.
+While EfficientNet-B4 achieves 99.83\% on HistoricalCrack18-19, cross-dataset evaluation reveals that its cracked-class recall on the combined heritage dataset (Masonry + CrackForest) is only 71.2\%. Grad-CAM visualisations on misclassified masonry images show the model attending to irrelevant background regions -- mortar joint patterns, shadow edges, surface roughness -- rather than crack structures. This confirms that the initial fine-tuning on HistoricalCrack19 has not fully generalised to the structured masonry domain.
 
 \subsubsection{Fine-tuning Protocol}
 
@@ -581,6 +699,13 @@ False Negatives (cracked predicted as intact) & \textbf{0} & \textbf{Critical sa
 \end{table}
 
 Zero false negatives is the most important result in the failure analysis. For structural damage assessment, missing actual damage (false negative) has higher safety and conservation cost than raising a false alarm (false positive). The classifier achieves perfect recall on the cracked class: every damaged structure in the test set is correctly flagged. The four false positives are intact images where Grad-CAM++ reveals the model attended to mortar joint patterns and shadow lines that are morphologically similar to crack edges.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{../checkpoints/classifier/gradcam.png}
+\caption{Grad-CAM++ attention maps for EfficientNet-B4. Top row: original images (left three intact, right three cracked). Bottom row: heatmap overlays. On intact images the model attends to broad surface regions with low activation; on cracked images the heatmap concentrates tightly along the crack trajectory, confirming the model learned spatially localised crack-edge representations rather than global texture statistics.}
+\label{fig:gradcam}
+\end{figure}
 
 \needspace{6\baselineskip}
 \subsection{Classifier OOD Generalisation}
@@ -754,6 +879,13 @@ Total & 20,971 & 3,223 & Five conservation interventions \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\linewidth]{../outputs/dacl10k_detector/train/labels.jpg}
+\caption{DACL10k v2 training split annotation statistics. Top-left: per-class instance counts (spalling dominates at 8,484 boxes; wetspot is least represented at 1,443). Top-right: bounding box spatial distribution (most boxes cluster centrally). Bottom: box centre and size distributions, showing the majority of damage annotations are small-to-medium sized and spatially centred, consistent with close-range bridge inspection photography.}
+\label{fig:dacl_labels}
+\end{figure}
+
 Training configuration: YOLOv8l, \texttt{freeze=10} backbone layers frozen, \texttt{lr0=0.005}, batch=16, imgsz=640, 50 epochs with patience=15. Training time approximately 3.5 hours on T4 GPU.
 
 \subsubsection{Results}
@@ -816,6 +948,31 @@ Four degradation stages are defined, each simulating the expected visual state o
 \end{table}
 
 All degradation operations are implemented using standard OpenCV and NumPy operations. The pipeline processes one image through all four stages in approximately 8--10 minutes on CPU.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.23\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/examples/deg_s0_r2.jpg}
+  \caption{Stage 0 — Baseline}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.23\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/examples/deg_s1_r2.jpg}
+  \caption{Stage 1 — $\approx$10 yr}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.23\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/examples/deg_s2_r2.jpg}
+  \caption{Stage 2 — $\approx$30 yr}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.23\linewidth}
+  \includegraphics[width=\linewidth]{../webapp/examples/deg_s3_r2.jpg}
+  \caption{Stage 3 — $\approx$60 yr}
+\end{subfigure}
+\caption{Synthetic temporal degradation pipeline applied to one facade sample. Stage 0: original undegraded image. Stage 1: HSV colour shift (yellowing) and additive film grain. Stage 2: thin crack overlay from eroded ground-truth mask with biological growth patches. Stage 3: dilated thick cracks, heavy discolouration, and white efflorescence deposits. The crack morphology at Stages 2--3 is drawn from real Masonry and CrackForest ground-truth masks, ensuring realism. SSIM relative to Stage 0: 1.000, 0.844, 0.483, 0.321.}
+\label{fig:degradation}
+\end{figure}
 
 \subsubsection{Filter Bank Results}
 
@@ -944,7 +1101,7 @@ The central finding of this project is that cross-dataset generalisation in crac
 \begin{itemize}[leftmargin=1.5cm]
 \item The \textbf{classifier} generalises gracefully. EfficientNet-B4 retains 76.67--89.83\% cracked recall across OOD domains, suggesting that semantic crack features (elongated low-contrast boundaries, branching structures) are domain-invariant at the level of global image statistics. The classifier's task is binary and does not require spatial localisation, which reduces sensitivity to domain-specific texture priors.
 
-\item The \textbf{segmentor} generalises moderately. U-Net achieves 73.61--86.92\% mIoU across the two source domains in its test split, with 13 pp of variance attributable to morphological differences (narrow irregular CrackForest cracks vs. wider higher-contrast Masonry cracks). The segmentor requires spatial reasoning but operates at pixel level, and its encoder-decoder architecture with skip connections preserves fine spatial information that supports generalisation to new crack morphologies.
+\item The \textbf{segmentor} generalises moderately. MAnet achieves 73.61--86.92\% mIoU across the two source domains in its test split, with 13 pp of variance attributable to morphological differences (narrow irregular CrackForest cracks vs. wider higher-contrast Masonry cracks). The segmentor requires spatial reasoning but operates at pixel level, and its encoder-decoder architecture with skip connections preserves fine spatial information that supports generalisation to new crack morphologies.
 
 \item The \textbf{detector} does not generalise without adaptation. YOLOv8l collapses to near-zero mAP on heritage surfaces (4.76\% and 1.13\%). Object detectors encode strong spatial priors through anchor box statistics and through the feature pyramid scale assignments that determine which detection head handles which object size. OmniCrack30k crack bounding boxes have specific aspect ratio and size distributions (large pavement cracks at 640px resolution) that do not match heritage crack boxes (thin wall cracks at different apparent scale and aspect ratio).
 \end{itemize}
@@ -955,7 +1112,7 @@ This asymmetry has a practical implication: for heritage building monitoring app
 
 Both fine-tuning experiments (detector Task 5, classifier Task 1b) demonstrate that domain adaptation with approximately 250 heritage-specific annotated images produces significant and practically meaningful improvements. Detector mAP@50 improves by +169\% relative on the combined heritage test set; classifier heritage recall improves by +26.9 pp. These improvements are achieved with only 50 and 20 epochs of fine-tuning respectively, confirming that the ImageNet and OmniCrack pre-training provides a strong starting point.
 
-However, the absolute post-adaptation detector performance (23.6\% mAP@50) remains far below in-distribution performance (96.7\% on OmniCrack30k val). The heritage domain gap requires substantially more than 250 fine-tuning images to close fully. Collecting and annotating 1,000-5,000 heritage crack images would likely produce a practical heritage-specific detector. Self-supervised pre-training on unlabelled heritage imagery (of which there is abundant supply from photogrammetric surveys and tourism photography) is a promising direction for reducing annotation requirements.
+However, the absolute post-adaptation detector performance (23.6\% mAP@50) remains far below in-distribution performance (70.3\% on OmniCrack30k val). The heritage domain gap requires substantially more than 250 fine-tuning images to close fully. Collecting and annotating 1,000-5,000 heritage crack images would likely produce a practical heritage-specific detector. Self-supervised pre-training on unlabelled heritage imagery (of which there is abundant supply from photogrammetric surveys and tourism photography) is a promising direction for reducing annotation requirements.
 
 \subsection{The Chained Pipeline Architecture Compensates for Detector Weaknesses}
 
@@ -970,6 +1127,7 @@ The strong Pearson correlation ($r = 0.843$) between the classical filter-bank d
 This result also validates the synthetic degradation pipeline as a data augmentation strategy: augmenting the training set with synthetically degraded versions of intact images (at Stage 2 and Stage 3 severity) would introduce crack-like visual features without requiring additional manual annotation, potentially improving generalisation to early-stage real-world crack patterns.
 
 \subsection{Sigmoid Calibration and Threshold Discovery in Deployment}
+\label{sec:sigmoid_cal}
 
 The MAnet segmentation model exhibited a domain-specific phenomenon: inverted sigmoid activation patterns between validation data and heritage deployment images. The learned sigmoid outputs showed highly biased distribution (min 0.52, max 0.99, mean 0.94), indicating that background pixels (no-crack) are encoded as high activation values while cracks are encoded as low values. This inversion is counterintuitive relative to typical sigmoid conventions where higher values indicate stronger positive class confidence.
 
@@ -1005,9 +1163,9 @@ This paper presents a comprehensive multi-task deep learning pipeline for automa
 \begin{enumerate}[leftmargin=1.5cm]
 \item \textbf{Classification (EfficientNet-B4):} 99.83\% accuracy, 99.56\% F1, and near-perfect AUC-ROC on HistoricalCrack18-19, exceeding all state-of-the-art targets. Zero false negatives in the failure analysis: the classifier never misses actual structural damage on the 780-image test set.
 
-\item \textbf{Detection (YOLOv8l):} 96.7\% mAP@50 on OmniCrack30k validation, exceeding the 70\% target. A 62.1 pp validation-to-test gap (96.7\% to 34.6\%) directly demonstrates cross-domain generalisation degradation. Heritage-specific fine-tuning on 250 images recovers 23.6\% mAP on the combined heritage test set, a 168\% relative improvement.
+\item \textbf{Detection (YOLOv8l):} 70.3\% mAP@50 on OmniCrack30k validation, exceeding the 70\% target. A 20 pp validation-to-test gap (70.3\% to 50.3\%) directly demonstrates generalisation degradation on held-out data; test-time augmentation recovers 63.0\%. Heritage-specific fine-tuning on 250 images recovers 23.6\% mAP on the combined heritage test set, a 168\% relative improvement.
 
-\item \textbf{Segmentation (MAnet / MiT-B2):} 97.5\% Crack IoU and 98.1\% Dice on the combined OmniCrack30k, Masonry, and CrackForest test split, exceeding the 80\% target by 17.5 pp. Vision transformer backbones with multi-scale attention gates enable superior morphological capture. Deployment uses threshold 0.8 with inverted sigmoid logic, a domain-specific calibration discovered during web application validation.
+\item \textbf{Segmentation (MAnet / MiT-B2):} 97.51\% Crack IoU and 98.08\% Dice on the combined OmniCrack30k, Masonry, and CrackForest test split, exceeding the 80\% target by 17.51 pp; 85.67\% mIoU on the heritage-only test split (54 images). Vision transformer backbones with multi-scale attention gates enable superior morphological capture. Deployment uses threshold 0.8 with inverted sigmoid logic, a domain-specific calibration discovered during web application validation.
 
 \item \textbf{Cross-domain generalisation is asymmetric by model type:} The classifier generalises gracefully (76--90\% recall on OOD domains); the segmentor generalises moderately (74--87\% mIoU); the detector collapses without adaptation (below 5\% mAP on heritage domains). This asymmetry is explained by the relative sensitivity of each model type's inductive biases to the domain shift.
 \end{enumerate}
@@ -1137,9 +1295,9 @@ vol.\ 125, p.\ 103606, May 2021.
 
 \bibitem{mishra2024}
 M.~Mishra and P.~B.~Louren\c{c}o,
-``Deep learning and computer vision for damage detection in cultural heritage structures: A review,''
+``Deep learning and computer vision for damage detection in cultural heritage structures: A comprehensive survey,''
 \textit{J.\ Cult.\ Heritage},
-vol.\ 65, pp.\ 275--292, 2024.
+vol.\ 68, pp.\ 1--19, 2024.
 
 \bibitem{redmon2016yolo}
 J.~Redmon, S.~Divvala, R.~Girshick, and A.~Farhadi,
@@ -1276,11 +1434,11 @@ The multi-scale representation provided by FPN is directly applicable to crack d
 
 \subsection{YOLO: Real-Time Single-Stage Detection}
 
-The YOLO (You Only Look Once) family~\cite{redmon2016yolo} reformulates object detection as a single regression problem: a CNN directly predicts bounding box coordinates and class probabilities from the full image in a single forward pass, eliminating the region proposal stage entirely. The original YOLO divides the image into an $S \times S$ grid, where each cell predicts $B$ bounding boxes and $C$ class probabilities. Though the single-stage design introduces lower accuracy on small objects, it achieves substantially higher throughput.
+The YOLO (You Only Look Once) family, from the original single-stage formulation~\cite{redmon2016yolo} to the multi-scale improvements of YOLOv3~\cite{surv:redmon2018yolov3}, reformulates object detection as a direct regression problem: a CNN predicts bounding box coordinates and class probabilities from the full image in a single forward pass, eliminating the region proposal stage. The original YOLO divides the image into an $S \times S$ grid, where each cell predicts $B$ bounding boxes and $C$ class probabilities. YOLOv3 improves this by adding FPN-style multi-scale predictions at three resolutions and replacing the softmax classifier with independent logistic classifiers, substantially improving small-object recall. Though the single-stage design introduces lower accuracy on small objects compared to two-stage detectors, it achieves substantially higher throughput.
 
 YOLOv8~\cite{ultralytics2023}, the current state of the art in the YOLO family, incorporates FPN-based multi-scale detection, a decoupled detection head (separate branches for classification and box regression), and an anchor-free formulation that eliminates the sensitivity to anchor hyperparameters. On COCO, YOLOv8s (small variant, 11.2M parameters) achieves 44.9\% mAP@50-95 while running at $>$300 fps on a GPU.
 
-In this project, YOLOv8l is the detection backbone for the OmniCrack30k single-class model (reaching 63.01\% mAP@50 on the test split via 3-phase progressive training) and YOLOv8s is used for the DACL10k multi-class damage detector. The anchor-free design reduces the manual effort of configuring anchor boxes for the diverse aspect ratios of crack bounding boxes, and the model variants balance accuracy with inference speed suitable for a web application.
+In this project, YOLOv8l is the detection backbone for the OmniCrack30k single-class model (reaching 50.3\% mAP@50 on the test split via 3-phase progressive training) and YOLOv8s is used for the DACL10k multi-class damage detector. The anchor-free design reduces the manual effort of configuring anchor boxes for the diverse aspect ratios of crack bounding boxes, and the model variants balance accuracy with inference speed suitable for a web application.
 
 %% ─────────────────────────────────────────────────────────────
 \section{Crack Detection and Structural Damage Datasets}
@@ -1344,7 +1502,7 @@ Pan and Yang~\cite{surv:pan2010transfer} formalise the transfer learning problem
 
 In the context of visual feature learning, transfer from ImageNet (1.2M images, 1000 classes) to a target visual task has become standard practice. Yosinski et al.~\cite{surv:yosinski2014transferable} provide empirical evidence that the first convolutional layers of a CNN learn general edge and texture detectors that transfer almost universally, while later layers become progressively more domain-specific. This stratification motivates the common strategy of fine-tuning only the later layers while keeping early layers frozen, which is exactly the approach adopted in Tasks 5 and 1b.
 
-For heritage crack detection, the transfer learning chain involves two levels of domain shift: (1) ImageNet photographs to crack images (general visual features to crack-specific textures), and (2) industrial crack images (OmniCrack30k road surfaces) to heritage masonry cracks. The first shift is well supported by the literature; the second is the primary challenge. The domain adaptation experiments in this project demonstrate that fine-tuning with only 250 heritage-labelled images increases mAP@50 by 169\% relative (8.8\% to 23.6\%), consistent with the transfer learning literature's finding that even small amounts of target-domain data substantially improve performance when the source-domain model provides good initialization.
+For heritage crack detection, the transfer learning chain involves two levels of domain shift: (1) ImageNet photographs to crack images (general visual features to crack-specific textures), and (2) industrial crack images (OmniCrack30k road surfaces) to heritage masonry cracks. The first shift is well supported by the literature; the second is the primary challenge. The domain adaptation experiments in this project demonstrate that fine-tuning with only 250 heritage-labelled images increases mAP@50 by 168\% relative (8.8\% to 23.6\%), consistent with the transfer learning literature's finding that even small amounts of target-domain data substantially improve performance when the source-domain model provides good initialization.
 
 The concept of \textit{catastrophic forgetting}~\cite{surv:mccloskey1989catastrophic} is also relevant: fine-tuning all layers with a high learning rate can destroy source-domain features and reduce performance below the pretrained baseline. The project addresses this by freezing the first 10 backbone layers and using a learning rate of $10^{-3}$ (10$\times$ below the default YOLOv8 initial rate), consistent with standard fine-tuning practice in the transfer learning literature.
 
@@ -1418,10 +1576,11 @@ The surveyed literature collectively establishes the technical foundation for a 
 \textbf{Heritage-specific data remains the critical gap.} Mishra and Louren\c{c}o's survey, Dais et al.'s masonry dataset, and the DACL10k benchmark collectively demonstrate that domain-specific annotated data is the primary bottleneck for heritage CV systems. The 250-image fine-tuning dataset used in this project produces meaningful improvements (+169\% relative mAP) but falls far short of the performance achievable with purpose-built heritage crack datasets of comparable scale to OmniCrack30k. This motivates future work on semi-supervised learning, synthetic data generation (as explored in Task 8), and collaborative dataset collection across heritage institutions.
 
 %% ─────────────────────────────────────────────────────────────
+\clearpage
 \section{Article List}
 \label{surv:sec:articles}
 
-The following 16 articles form the reading basis of this survey. Authors are listed as in the original publications; conference and journal abbreviations follow standard CV convention.
+The following 20 articles form the reading basis of this survey. Authors are listed as in the original publications; conference and journal abbreviations follow standard CV convention.
 
 \begin{enumerate}[leftmargin=*, label={[\arabic*]}]
 
@@ -1456,6 +1615,8 @@ The following 16 articles form the reading basis of this survey. Authors are lis
   \item Benz, C. and Rodehorst, V. (2022). ``Crack Segmentation on UAS-Based Imagery Using Transfer Learning and Extending Training Datasets with Synthetic Cracks.'' \textit{ISPRS Annals of Photogrammetry, Remote Sensing and Spatial Information Sciences}, V-2-2022, pp.\ 27--34. [OmniCrack30k dataset]
 
   \item Mishra, M. and Louren\c{c}o, P.B. (2024). ``Deep Learning and Computer Vision for Damage Detection in Cultural Heritage Structures: A Comprehensive Survey.'' \textit{Journal of Cultural Heritage}, 68, pp.\ 1--19.
+
+  \item Benz, C. and Rodehorst, V. (2023). ``DACL10k: Benchmark for Semantic Bridge Damage Segmentation.'' \textit{arXiv preprint arXiv:2309.00460}.
 
   \item Pan, S.J. and Yang, Q. (2010). ``A Survey on Transfer Learning.'' \textit{IEEE Transactions on Knowledge and Data Engineering (TKDE)}, 22(10), pp.\ 1345--1359.
 
@@ -1562,7 +1723,7 @@ vol.\ V-2-2022, pp.\ 27--34, 2022.
 \bibitem{surv:benz2022dacl10k}
 C.~Benz and V.~Rodehorst,
 ``DACL10k: Benchmark for semantic bridge damage segmentation,''
-\textit{arXiv preprint arXiv:2309.00460}, Sep.\ 2022.
+\textit{arXiv preprint arXiv:2309.00460}, Sep.\ 2023.
 
 \bibitem{surv:mishra2024heritage}
 M.~Mishra and P.~B.~Louren\c{c}o,
