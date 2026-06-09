@@ -125,6 +125,9 @@ heritage-damage-assessment/
 │   └── utils.py                   # Metrics, Grad-CAM, visualization
 │
 ├── notebooks/
+│   ├── ===== EDA (run first) =====
+│   ├── 00_eda.ipynb                         # Dataset exploration: 57k images, class dist, bbox stats, seg masks, t-SNE
+│   │
 │   ├── ===== PRODUCTION MODELS (main 3) =====
 │   ├── 01_classification.ipynb              # EfficientNet-B4 classification (99.83% acc ✓)
 │   ├── 02_detection.ipynb                   # YOLOv8l phase training on OmniCrack30K (Phase 2 test mAP@50 55.22% ✓)
