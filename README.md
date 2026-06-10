@@ -38,8 +38,7 @@ This repository is submitted as part of the course project requirement (45% of f
 
 | Deliverable | Location | Status |
 |---|---|---|
-| Project report (intro, methods, experiments, results, conclusions) | `report/report.pdf` | [x] |
-| Article reading survey + article list | `report/article_survey.pdf` | [x] |
+| Project report + article reading survey + article list (combined) | `report/report.pdf` | [x] |
 | Project code | `src/` | [x] |
 | README document | `README.md` (this file) | [x] |
 | Testing samples for validation | `samples/` | [x] |
