@@ -86,7 +86,7 @@
 \newlabel{sec:seg_methods}{{5.3}{23}{Task 3: Semantic Segmentation}{subsection.5.3}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.1}Architecture: MAnet with MiT-B2 Encoder}{23}{subsubsection.5.3.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.2}Loss Function Design}{23}{subsubsection.5.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}Training Protocol}{23}{subsubsection.5.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}Training Protocol}{24}{subsubsection.5.3.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.4}Evaluation Metrics}{24}{subsubsection.5.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.5}Dataset Configuration Ablation and Threshold Calibration History}{24}{subsubsection.5.3.5}\protected@file@percent }
 \newlabel{sec:seg_ablation}{{5.3.5}{24}{Dataset Configuration Ablation and Threshold Calibration History}{subsubsection.5.3.5}{}}
@@ -101,8 +101,8 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces EfficientNet-B4 confusion matrix on the HistoricalCrack18-19 test set (585 images). Zero false negatives: every cracked image is correctly flagged. One false positive: one intact image predicted as cracked.}}{27}{figure.caption.20}\protected@file@percent }
 \newlabel{fig:cls_cm}{{15}{27}{EfficientNet-B4 confusion matrix on the HistoricalCrack18-19 test set (585 images). Zero false negatives: every cracked image is correctly flagged. One false positive: one intact image predicted as cracked}{figure.caption.20}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Task 2: Detection Results}{27}{subsection.6.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces YOLOv8l (3-phase) detection results on OmniCrack30k. Validation uses Phase 2 best checkpoint; test reports standard inference and TTA results.}}{27}{table.caption.21}\protected@file@percent }
-\newlabel{tab:det_results}{{6}{27}{YOLOv8l (3-phase) detection results on OmniCrack30k. Validation uses Phase 2 best checkpoint; test reports standard inference and TTA results}{table.caption.21}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces YOLOv8l (3-phase) detection results on OmniCrack30k. Validation uses Phase 2 best checkpoint; standard test uses the 97-image training subset; TTA is evaluated on the full 581-image OmniCrack30k test split in notebook 05.}}{27}{table.caption.21}\protected@file@percent }
+\newlabel{tab:det_results}{{6}{27}{YOLOv8l (3-phase) detection results on OmniCrack30k. Validation uses Phase 2 best checkpoint; standard test uses the 97-image training subset; TTA is evaluated on the full 581-image OmniCrack30k test split in notebook 05}{table.caption.21}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Task 3: Segmentation Results}{28}{subsection.6.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces MAnet + MiT-B2 segmentation results on the combined OmniCrack30k + Masonry + CrackForest test split. The target Crack IoU of 80\% is exceeded by 17.51 pp. Deployment uses threshold 0.8 (inverted: values $< 0.8$ indicate cracks).}}{28}{table.caption.22}\protected@file@percent }
 \newlabel{tab:seg_results}{{7}{28}{MAnet + MiT-B2 segmentation results on the combined OmniCrack30k + Masonry + CrackForest test split. The target Crack IoU of 80\% is exceeded by 17.51 pp. Deployment uses threshold 0.8 (inverted: values $< 0.8$ indicate cracks)}{table.caption.22}{}}
