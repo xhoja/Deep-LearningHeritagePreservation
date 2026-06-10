@@ -225,8 +225,11 @@ DACL10k v2 is a bridge structural damage dataset with polygon-annotated images a
 \subsection{Exploratory Data Analysis}
 \label{subsec:eda}
 
-Across all six datasets the pipeline uses 57,291 annotated images (Table~\ref{tab:datasets_full}).
-Several characteristics identified during exploration directly motivated design decisions.
+The pipeline aggregates \textbf{57,291 annotated images} across seven open-source datasets spanning
+three annotation modalities (image labels, bounding boxes, binary pixel masks), as summarised in
+Table~\ref{tab:datasets_full}.
+The following analysis characterises each dataset's key statistical properties and directly motivates
+the model architecture, loss function, and augmentation choices described in subsequent sections.
 
 \begin{table}[H]
 \centering
@@ -244,161 +247,224 @@ DACL10k v2          & Detection       & 6,935  & 975   & —     & 7,910  \\
 Heritage Defect     & Detection       & —      & —     & —     & 408    \\
 CrackForest         & Segmentation    & 118    & —     & —     & 118    \\
 Masonry             & Segmentation    & 240    & —     & —     & 240    \\
-OmniCrack30k        & Segmentation / Detection & 22,158 & 3,277 & 4,582 & 30,017 \\
+OmniCrack30k        & Segmentation    & 22,158 & 3,277 & 4,582 & 30,017 \\
 \midrule
 \textbf{Total}      &                 & \textbf{43,637} & \textbf{6,456} & \textbf{6,790} & \textbf{57,291} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Class imbalance in DACL10k.}
-Parsing all 6,935 YOLO label files reveals a pronounced long-tail class distribution (Figure~\ref{fig:dacl_class_dist}).
-The \textit{crack} class accounts for the majority of annotations, while \textit{wetspot} has roughly one third as many instances.
-This imbalance motivates the use of focal loss during YOLOv8l training and class-specific confidence thresholds during evaluation.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/01_dataset_overview.png}
+\caption{Dataset size by task. OmniCrack30k (30,017 images) dominates the corpus, providing a large-scale
+multi-source segmentation benchmark. DACL10k (7,910 images) is the primary detection source.
+StructDamage (14,702 images) is perfectly balanced across splits and anchors the classification task.
+Colour encodes task: blue = classification, red = detection, green = segmentation.}
+\label{fig:dataset_overview}
+\end{figure}
+
+\textbf{Classification class balance.}
+StructDamage is perfectly balanced: each split contains exactly 50\% cracked and 50\% intact images
+(5,145 per class in the training set, 1,102 in validation, 1,104 in test).
+Historical Crack, used as a domain-transfer evaluation set, is markedly different:
+
+\begin{equation}
+r = \frac{N_{\text{cracked}}}{N_{\text{intact}}} = \frac{757}{3{,}139} \approx 0.24
+\label{eq:hist_crack_ratio}
+\end{equation}
+
+This 1:4 imbalance means a na\"ive majority-class baseline would achieve 80\% accuracy while correctly
+classifying no cracked images.
+The imbalance is addressed via weighted random sampling during fine-tuning on historical imagery
+(Figure~\ref{fig:class_balance}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/02_class_balance.png}
+\caption{Classification dataset balance. StructDamage (left) maintains a perfect 50/50 split across all
+three data splits. Historical Crack (right) is strongly skewed: intact images outnumber cracked images
+4:1, requiring weighted sampling or loss re-weighting to avoid majority-class collapse during evaluation.}
+\label{fig:class_balance}
+\end{figure}
+
+\textbf{Long-tail class distribution in DACL10k.}
+Parsing all 6,935 YOLO label files reveals 20,971 bounding-box annotations (mean 3.85 per non-empty image)
+with a pronounced long-tail class distribution (Figure~\ref{fig:dacl_class_dist}).
+The \textit{crack} class dominates, while \textit{wetspot} has roughly one third as many instances.
+Critically, \textbf{2,997 of the 6,935 training images} contain two or more defect classes simultaneously,
+confirming that damage types co-occur as the rule rather than the exception on heritage facades.
+This imbalance motivates focal loss during YOLOv8l training and class-specific confidence thresholds
+at evaluation time; the small annotation count for wetspot and crack explains their lower per-class mAP.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{../outputs/eda/04_detection_stats.png}
-\caption{DACL10k training set: class distribution (left), normalised bounding-box width/height scatter coloured by class (centre), and annotations-per-image histogram with mean indicated (right). The class imbalance and the concentration of small bounding boxes (width/height $<$ 0.1) inform both the loss function choice and the use of SAHI tiled inference.}
+\caption{DACL10k training set: class distribution (left), normalised bounding-box width/height scatter
+coloured by class (centre), and annotations-per-image histogram (right, mean 3.85 shown as dashed red line).
+The long tail from crack to wetspot and the concentration of small boxes (width/height $<$\,0.1) inform
+focal loss weighting and SAHI tiled inference.}
 \label{fig:dacl_class_dist}
 \end{figure}
 
-\textbf{Crack pixel sparsity.}
-Computing the crack pixel density $\rho = \frac{1}{HW}\sum_{i,j}\mathbf{1}[M(i,j)=1]$ for every mask in the
-segmentation datasets reveals a strongly right-skewed distribution: CrackForest has a median $\rho = 1.31\%$
-and Masonry a median $\rho \approx 3\%$.
-This extreme class imbalance at pixel level (up to 99:1 background-to-crack ratio) is the primary reason pixel
-accuracy is a misleading metric — a model predicting all pixels as background achieves $>$98\% accuracy yet
-Intersection-over-Union of zero.
-Tversky loss with $\alpha = 0.7$ (penalising false negatives more than false positives) directly addresses this.
-
 \begin{figure}[H]
 \centering
-\begin{subfigure}[b]{0.48\textwidth}
-\includegraphics[width=\textwidth]{../outputs/eda/07_segmentation_gallery.png}
-\caption{Segmentation gallery: original image, ground-truth binary mask, and red-channel overlay. $\rho$ values annotated on each mask.}
-\label{fig:seg_gallery}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.48\textwidth}
-\includegraphics[width=\textwidth]{../outputs/eda/08_crack_density.png}
-\caption{Crack pixel density distribution across CrackForest, Masonry, and OmniCrack30k (300-image sample). All three datasets are right-skewed, confirming that IoU is the appropriate evaluation metric.}
-\label{fig:crack_density}
-\end{subfigure}
-\caption{Segmentation dataset analysis.}
-\end{figure}
-
-\textbf{Spatial annotation distribution.}
-Aggregating bounding-box centres from all 20,971 DACL10k training annotations into a $80\times80$ heatmap
-(Gaussian-smoothed, $\sigma=2$) shows a near-uniform spatial distribution with a mild tendency towards the
-image centre-bottom.
-No strong positional bias was found, indicating that the dataset does not trivially reward spatial priors.
-
-\textbf{Domain shift.}
-RGB channel histograms reveal that DACL10k and CrackForest images are greyer and have lower saturation than
-StructDamage (concrete vs.\ general building photography).
-This motivates the use of ImageNet normalisation
-$\hat{x}_c = (x_c - \mu_c)/\sigma_c$ with $\boldsymbol{\mu}=(0.485, 0.456, 0.406)$ and
-$\boldsymbol{\sigma}=(0.229, 0.224, 0.225)$, which maps each dataset's pixel distribution closer to the
-ImageNet statistics assumed by the pre-trained backbone weights.
-To quantify this gap numerically, Figure~\ref{fig:brightness_contrast} plots violin distributions of mean
-greyscale intensity (brightness) and pixel standard deviation (contrast) across all six datasets.
-CrackForest images are consistently darker than the ImageNet neutral grey ($\mu=128$), while StructDamage
-is brighter.
-Contrast is highest for CrackForest and lowest for Masonry, confirming that hairline cracks in Masonry
-are harder to separate from background texture on the basis of intensity contrast alone.
-These measurements directly informed the colour jitter augmentation parameters (brightness $\pm 0.3$,
-contrast $\pm 0.3$) used throughout training.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.96\textwidth]{../outputs/eda/10b_brightness_contrast.png}
-\caption{Domain shift quantified via brightness (mean greyscale intensity) and contrast (pixel std dev)
-across all six datasets. Each violin shows the full distribution over 120 sampled images; the white bar
-spans the interquartile range. Datasets below the neutral grey line (128) will produce systematically
-different activations in an ImageNet-pretrained backbone, motivating colour jitter augmentation.}
-\label{fig:brightness_contrast}
+\includegraphics[width=0.96\textwidth]{../outputs/eda/06_detection_samples.png}
+\caption{Six DACL10k training images annotated with ground-truth bounding boxes, selected to show
+multi-class co-occurrence. Colours indicate defect class: red = crack, blue = efflorescence,
+orange = spalling, purple = weathering, teal = wetspot. Most images contain two or more damage types,
+motivating joint multi-class detection over independent binary detectors.}
+\label{fig:detection_samples}
 \end{figure}
 
 \textbf{Defect class co-occurrence.}
-Beyond marginal class counts, the co-occurrence structure of DACL10k annotations is informative.
-Counting how many training images contain each pair of defect classes and row-normalising yields a
-conditional probability matrix $P(\text{col class} \mid \text{row class present})$
-(Figure~\ref{fig:cooccurrence}).
-Crack is present in a large fraction of images annotated with other damage types (efflorescence, spalling),
-while wetspot tends to appear as a more isolated finding.
-These co-occurrence patterns motivate joint multi-class detection rather than five independent binary
-classifiers; they also explain a source of hard negatives where two visually similar damage types
-(e.g.\ crack vs.\ efflorescence edges) co-exist in the same bounding box region.
+Beyond marginal counts, the co-occurrence structure of DACL10k reveals how damage types are coupled
+on real facades.
+Computing conditional probabilities $P(\text{col class} \mid \text{row class present})$ by row-normalising
+the pairwise image-count matrix (Figure~\ref{fig:cooccurrence}) shows that crack is present in a large
+fraction of images annotated with any other damage type.
+Wetspot, by contrast, tends to appear in relative isolation.
+This asymmetry has two practical consequences: (i) joint multi-class detection is preferable to
+five independent binary detectors; and (ii) crack and efflorescence edges regularly co-exist within
+the same bounding-box region, creating hard negatives that degrade single-class precision.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.96\textwidth]{../outputs/eda/04b_cooccurrence.png}
-\caption{DACL10k defect class co-occurrence matrix. Left: raw image counts per class pair (diagonal =
-total images containing that class). Right: conditional probability
+\caption{DACL10k defect class co-occurrence. Left: raw image counts per class pair (diagonal = total
+images containing that class). Right: conditional probability
 $P(\text{col class} \mid \text{row class present})$, row-normalised.
-High off-diagonal values indicate classes that reliably co-occur, motivating joint multi-label detection.}
+Crack co-occurs with nearly every other damage type; wetspot is the most isolated class.}
 \label{fig:cooccurrence}
 \end{figure}
 
 \textbf{Bounding-box size morphology.}
-The scatter plot of normalised bounding-box dimensions (Figure~\ref{fig:dacl_class_dist}) suggests
-class-specific size clusters, but the full distribution shape is better characterised by violin plots
-(Figure~\ref{fig:bbox_violin}).
-Crack boxes are narrow (low width, broad height) consistent with elongated fractures; weathering and
-efflorescence produce large, diffuse boxes covering broad surface areas; wetspot boxes cluster near
-zero in both dimensions, indicating small localised patches.
-These scale differences directly inform the observed class-specific mAP ordering
-(weathering highest at 22.7\%, wetspot lowest at 6.6\%) and motivate the use of SAHI tiling for small
-wetspot and crack instances.
+Violin plots of normalised bounding-box width and height per class (Figure~\ref{fig:bbox_violin})
+reveal class-specific scale signatures that the scatter plot in Figure~\ref{fig:dacl_class_dist} obscures.
+Crack and efflorescence boxes are \textit{narrow} (median width $\approx 0.12$, consistent with
+thin linear fractures and surface deposits); spalling produces the smallest boxes overall
+(median width $\approx 0.07$, localised flaking events).
+Weathering produces the largest and most variable boxes (median width $\approx 0.46$, reflecting
+diffuse, facade-wide degradation), and wetspot spans a similarly broad range (median $\approx 0.33$)
+as large moisture stains frequently cover substantial portions of the image.
+Weathering's large box size directly explains its relatively higher mAP (22.7\%): large, easy-to-localise
+targets inflate AP, while spalling's tiny footprint explains its lower score.
+These scale differences motivated the use of SAHI tiled inference at test time to improve recall on
+small defect instances.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.96\textwidth]{../outputs/eda/04c_bbox_violin.png}
-\caption{Per-class bounding-box width (left) and height (right) distributions as violin plots.
-White horizontal line = median; thick white bar = interquartile range.
-Crack boxes are narrow and elongated; weathering boxes are large and diffuse;
-wetspot boxes are systematically small.}
+\caption{Per-class bounding-box width (left) and height (right) distributions.
+White horizontal line = median; thick white bar = IQR.
+Crack and efflorescence are narrow; spalling is the smallest class overall; weathering and wetspot
+span large, highly variable box sizes consistent with diffuse damage covering broad facade areas.}
 \label{fig:bbox_violin}
 \end{figure}
 
-Per-class spatial density maps (Figure~\ref{fig:perclass_heatmaps}) decompose the aggregate
-annotation heatmap into five independent views.
-Weathering and crack show near-uniform spatial distributions across the image plane,
-while efflorescence and wetspot exhibit mild clustering in the lower-centre region,
-consistent with gravity-driven salt crystallisation and moisture accumulation at facade bases.
-No class shows a strong positional bias that would trivially reward spatial anchoring strategies.
+\textbf{Spatial annotation distribution.}
+Aggregating bounding-box centres across all 20,971 DACL10k training annotations reveals a
+near-uniform spatial distribution centred around the image midpoint
+(mean $x_c = 0.501$, mean $y_c = 0.473$, std $\approx 0.22$ in both axes).
+This distribution reflects the typical photography protocol for structural inspection datasets
+— photographers frame their subjects centrally — rather than a systematic spatial bias.
+DACL10k therefore does not reward spatial anchor priors, and no positional prior was incorporated
+into the anchor design.
+
+\textbf{Crack pixel sparsity.}
+Computing the crack pixel density
+$\rho = \frac{1}{HW}\sum_{i,j}\mathbf{1}[M(i,j)=1]$
+for every segmentation mask reveals a strongly right-skewed distribution.
+CrackForest (118 images) has a mean $\rho = 1.62\%$ and Masonry (240 images) a mean $\rho = 4.21\%$;
+the majority of images in both datasets have $\rho < 5\%$.
+This extreme pixel-level class imbalance (up to 99:1 background-to-crack ratio) is the primary
+reason pixel accuracy is a misleading metric: a model predicting all pixels as background achieves
+$>$98\% accuracy yet Intersection-over-Union of zero.
+Tversky loss with $\alpha = 0.7$ (penalising false negatives more heavily than false positives)
+directly addresses this asymmetry.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.98\textwidth]{../outputs/eda/05b_perclass_heatmaps.png}
-\caption{Per-class annotation density maps (Gaussian-smoothed, $\sigma=2.5$, $60\times60$ grid)
-for each of the five DACL10k defect classes.
-Each map is independently normalised; $\bigstar$ marks the densest grid cell.
-Colour scales use class-matched colourmaps for visual distinctiveness.}
-\label{fig:perclass_heatmaps}
+\includegraphics[width=0.85\textwidth]{../outputs/eda/07_segmentation_gallery.png}
+\caption{Segmentation gallery: original image (left column), ground-truth binary mask (centre), and
+red-channel overlay (right). The $\rho$ values annotated on each mask confirm that crack pixels
+are a small minority even in visibly damaged images, making pixel accuracy an unreliable metric.}
+\label{fig:seg_gallery}
 \end{figure}
 
 \textbf{Crack morphology.}
-Crack pixel density $\rho$ characterises the aggregate crack burden per image, but the
-\textit{structure} of cracks --- how many disconnected segments exist, and how large each is ---
-is equally relevant to segmentation difficulty.
-Connected-component labelling of every ground-truth binary mask (Figure~\ref{fig:crack_morphology})
-reveals that CrackForest images contain multiple small, disconnected crack segments (hairline cracking
-network), while Masonry images contain fewer but larger connected components.
-This structural difference predicts that false-negative risk is higher on CrackForest (where many
-thin branches must each be detected), while geometric precision matters more on Masonry (where
-large region boundaries must be traced accurately).
+Beyond aggregate density $\rho$, the \textit{structure} of crack regions — how many disconnected
+segments exist and how large each is — determines segmentation difficulty.
+Connected-component labelling of every ground-truth mask (Figure~\ref{fig:crack_morphology}) reveals
+that CrackForest images typically contain multiple small, disconnected hairline segments, whereas
+Masonry images contain fewer but geometrically larger components.
+This structural difference predicts complementary failure modes: false-negative risk is higher on
+CrackForest (where many thin branches must each be individually detected), while boundary-tracing
+precision matters more on Masonry (where large region outlines must be accurately reproduced).
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.98\textwidth]{../outputs/eda/08b_crack_morphology.png}
-\caption{Crack morphology analysis via connected-component labelling. Left: log-scale distribution of
-crack segment area (px$^2$) per dataset; dashed lines indicate class means. Centre: number of distinct
-crack segments per image. Right: box-plot comparison of log segment area.
-CrackForest has more, smaller segments; Masonry has fewer, larger ones.}
+\caption{Crack morphology via connected-component labelling. Left: log-scale segment area distribution;
+dashed lines = class means. Centre: distinct crack segments per image (CrackForest has more, smaller
+segments; Masonry has fewer, larger ones). Right: box-plot comparison of log segment area.}
 \label{fig:crack_morphology}
 \end{figure}
+
+\textbf{Resolution heterogeneity.}
+Original image resolutions vary substantially across datasets (Figure~\ref{fig:resolution}), from
+sub-$400\,\text{px}$ images in CrackForest to $>$2\,k\,px images in DACL10k.
+All images are resized to a fixed resolution before training (224\,px for classification, 640\,px
+for detection and segmentation).
+For DACL10k this entails significant downsampling — fine hairline cracks that span only a few pixels
+at original resolution may be lost entirely.
+This observation directly motivated the use of SAHI tiled inference at test time, which processes
+the original high-resolution image in overlapping $640\,\text{px}$ tiles to recover small-scale detail.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{../outputs/eda/09_image_dimensions.png}
+\caption{Original image resolution (width vs.\ height) across all six datasets, with 120 images
+sampled per dataset. DACL10k spans the widest range of resolutions and includes large
+$1{,}000$--$3{,}000\,\text{px}$ images, making downsampling to $640\,\text{px}$ potentially lossy
+for hairline crack detail.}
+\label{fig:resolution}
+\end{figure}
+
+\textbf{Domain shift.}
+Heritage imagery differs systematically from the ImageNet distribution on which all backbone weights
+were pre-trained.
+Per-channel RGB histograms (Figure~\ref{fig:rgb_hist}) confirm that DACL10k and CrackForest are
+dominated by grey tones with little colour saturation, whereas StructDamage contains more chromatic
+variation.
+Quantifying this gap via violin plots of per-image brightness (mean greyscale intensity) and contrast
+(pixel standard deviation) across all six datasets (Figure~\ref{fig:brightness_contrast}) reveals
+two key findings: CrackForest images are consistently \textit{darker} than the ImageNet neutral grey
+($\mu=128$), which shifts early-layer activation statistics away from the pre-trained regime; and
+Masonry has the \textit{lowest contrast} of any dataset, confirming that hairline cracks in mortared
+stone are harder to separate from background texture by intensity alone.
+These measurements directly informed the colour jitter augmentation parameters (brightness $\pm 0.3$,
+contrast $\pm 0.3$) used throughout training to bridge the domain gap.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/10_rgb_histograms.png}
+\caption{Mean per-channel RGB intensity histograms (80 images sampled per dataset) for StructDamage,
+DACL10k, and CrackForest. Heritage datasets (DACL10k, CrackForest) are dominated by grey tones and
+lack the colour diversity of StructDamage, motivating colour jitter augmentation.}
+\label{fig:rgb_hist}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/10b_brightness_contrast.png}
+\caption{Domain shift quantified by brightness and contrast across all six datasets (120 images sampled
+each). White bar = IQR; horizontal dashed line = ImageNet neutral grey (128).
+CrackForest is the darkest dataset; Masonry has the lowest contrast — explaining its higher
+false-negative rate for thin crack segmentation.}
+\label{fig:brightness_contrast}
+\end{figure}
+
 
 %% ════════════════════════════════════════════════════════════
 \clearpage
@@ -752,14 +818,7 @@ Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
 \end{tabular}
 \end{table}
 
-\textbf{Classifier generalisation.} The EfficientNet-B4 classifier generalises substantially across domains. On CrackForest (road surface cracks), recall reaches 89.83\%, a drop of only 9.97 pp from the in-distribution performance. On Masonry (heritage wall cracks), recall is 76.67\%, a larger drop of 23.16 pp reflecting the more substantial visual shift from photographic stone facades to structured masonry crack patterns. t-SNE visualisation of 1792-dimensional average-pool feature vectors across the three domains shows three clearly separated clusters, confirming that the observed performance differences reflect genuine distributional shift rather than label noise or evaluation artefacts.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.62\linewidth]{../outputs/tsne_efficientnet_b4.png}
-\caption{t-SNE of EfficientNet-B4 average-pool features (1792-dim) across three domains. HistoricalCrack (green circles), CrackForest (orange triangles), and Masonry (red squares) form three clearly separated clusters, confirming genuine domain shift. The partial overlap between HistoricalCrack and CrackForest is consistent with the 9.97 pp recall drop; the larger Masonry separation explains the 23.16 pp drop.}
-\label{fig:tsne}
-\end{figure}
+\textbf{Classifier generalisation.} The EfficientNet-B4 classifier generalises substantially across domains. On CrackForest (road surface cracks), recall reaches 89.83\%, a drop of only 9.97 pp from the in-distribution performance. On Masonry (heritage wall cracks), recall is 76.67\%, a larger drop of 23.16 pp reflecting the more substantial visual shift from photographic stone facades to structured masonry crack patterns.
 
 \textbf{Segmentor generalisation.} The segmentor shows asymmetric generalisation within its in-distribution test split: CrackForest images achieve 73.61\% mIoU (crack IoU: 48.78\%, Dice: 65.58\%), while Masonry images achieve 86.92\% mIoU (crack IoU: 75.01\%, Dice: 85.72\%). The 13.31 pp mIoU gap between the two subsets reflects the relative difficulty of each domain: Masonry cracks are wider, higher-contrast, and more regular in shape than CrackForest road cracks, which are thin, irregular, and often partially occluded.
 
@@ -1052,13 +1111,6 @@ Total & 20,971 & 3,223 & Five conservation interventions \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.72\linewidth]{../outputs/dacl10k_detector/train/labels.jpg}
-\caption{DACL10k v2 training split annotation statistics. Top-left: per-class instance counts (spalling dominates at 8,484 boxes; wetspot is least represented at 1,443). Top-right: bounding box spatial distribution (most boxes cluster centrally). Bottom: box centre and size distributions, showing the majority of damage annotations are small-to-medium sized and spatially centred, consistent with close-range bridge inspection photography.}
-\label{fig:dacl_labels}
-\end{figure}
 
 Training configuration: YOLOv8l, \texttt{freeze=10} backbone layers frozen, \texttt{lr0=0.005}, batch=16, imgsz=640, 50 epochs with patience=15. Training time approximately 3.5 hours on T4 GPU.
 
