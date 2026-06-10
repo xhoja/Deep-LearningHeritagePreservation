@@ -700,31 +700,6 @@ References are drawn from approved course venues: IEEE Transactions, CVPR, ICCV,
 - Mishra & Lourenço (2024). *Deep learning and computer vision for damage detection in cultural heritage structures.* Journal of Cultural Heritage. — domain survey.
 
 
-## Roadmap
-
-- [x] Project scoping and dataset identification
-- [x] Data download and preprocessing (all 4 datasets)
-- [x] Task 1: Classification — EfficientNet-B4, 99.83% acc, 99.56% F1, ≈100% AUC-ROC
-- [x] Task 2: Detection — YOLOv8l, 3-phase progressive training (320→640→1024px); Phase 2 val mAP@50=70.30%, test mAP@50=50.3% (97-image subset); TTA mAP@50=63.0% (581-image split, notebook 05)
-- [x] Task 3: Segmentation — MAnet + mit_b2, 3-phase progressive training; Crack IoU=97.51%, mIoU=85.67%, Dice=98.08% ✓ (threshold 0.8 inverted)
-- [x] Task 4: Cross-dataset evaluation — Grad-CAM, t-SNE feature space, performance heatmap
-- [x] Task 5: Detector domain adaptation — fine-tuned on heritage data, combined 8.8% → 23.6% mAP@50 (+169%)
-- [x] Task 6: Failure analysis & Grad-CAM++ — zero FN classifier, OOD generalization confirmed, detector domain gap quantified
-- [x] Task 5b: SAHI sliced inference evaluation (in `05_detector_finetuning.ipynb`) — plain YOLOv8l 28.0% vs SAHI 18.9% (SAHI underperforms on this domain; standalone notebook consolidated into nb05)
-- [x] Task 1b: Classifier domain adaptation — heritage cracked recall 71.2% → 98.1% after fine-tuning on masonry+crackforest
-- [x] Task 9: Synthetic temporal degradation analysis — Gabor/LoG/entropy/GLCM filter bank, SSIM change maps, degradation score, DL classifier validation (Pearson r=0.843)
-- [x] Task 10: DACL10k multi-class detector — YOLOv8s trained on dacl10k (~7k images, 5 classes: crack, efflorescence, spalling, weathering, wetspot); mAP@50 13.5% overall (weathering 22.7%, spalling 16.2%, crack 12.7%); freeze=10, 50 epochs on T4
-- [x] Populate `samples/` with validation images (saved via notebook 06)
-- [x] Web application — multi-image batch analysis, severity card, animated step loader, crack arc gauge, Grad-CAM + surface texture view switcher, JSON export
-- [x] Webapp: Before/After comparison mode — SSIM change map, side-by-side segmentation, degradation summary with conservation verdict
-- [x] Webapp: Synthetic degradation examples integrated into upload panel (nb09 stages 0–3)
-- [x] Webapp: Image preprocessing filter panel — 6 classical CV filters (CLAHE, Black-Hat/Crack Extract, FFT High-Pass, Canny Overlay, LoG Enhanced) with academic descriptions; applied before all models; available in both single and compare modes
-- [x] About page: full academic documentation of pipeline, degradation analysis, and preprocessing filter theory
-- [x] Write project report (`report/report.pdf`)
-- [x] Write article reading survey (`report/article_survey.pdf`)
-- [x] PowerPoint presentation
-
-
 ## Author
 
 Xhoi Ikonomi — Master's in Artificial Intelligence & Data Science  
