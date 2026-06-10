@@ -269,7 +269,7 @@ python infer.py \
 ### Notebook Organization
 
 **EDA notebook** (run first — dataset exploration and preprocessing analysis):
-- `00_eda.ipynb` — Dataset landscape (57,291 images across 6 datasets), class distributions, DACL10K bounding-box statistics, segmentation mask gallery with crack pixel density, image resolution profiles, RGB histograms, and EfficientNet-B4 t-SNE feature space. Outputs saved to `outputs/eda/`.
+- `00_eda.ipynb` — Dataset landscape (57,291 images across 6 datasets), class distributions, DACL10K bounding-box statistics (class distribution, bbox violin plots, co-occurrence matrix, combined + per-class spatial density heatmaps), segmentation mask gallery with crack pixel density, crack morphology analysis (connected-component area and segment count per image), image resolution profiles, RGB histograms, brightness/contrast domain-shift quantification, and EfficientNet-B4 t-SNE feature space. Outputs saved to `outputs/eda/`.
 
 **Production notebooks** (used for webapp + final evaluation):
 - `01_classification.ipynb` — Train EfficientNet-B4 classifier

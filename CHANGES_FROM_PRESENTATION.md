@@ -204,9 +204,29 @@ README, report, webapp About page all updated to match.
 
 ---
 
-## 12. New: EDA Notebook (`00_eda.ipynb`) ✓ DONE
+## 12. New: EDA Notebook (`00_eda.ipynb`) ✓ DONE (expanded with 5 new visualisations)
 
 Added a new exploratory data analysis notebook as the first notebook in the pipeline. All figures saved to `outputs/eda/`.
+
+**Original visualisations:**
+- `01_dataset_overview.png` — horizontal bar chart of all 7 datasets by task
+- `02_class_balance.png` — StructDamage split bars + Historical Crack imbalance
+- `03_classification_samples.png` — 2×5 sample grid (cracked / intact)
+- `04_detection_stats.png` — DACL10K class dist + bbox scatter + annotations/image histogram
+- `05_bbox_heatmap.png` — combined spatial annotation density heatmap
+- `06_detection_samples.png` — 6 DACL10K images with GT bounding boxes
+- `07_segmentation_gallery.png` — image / mask / overlay for 4 segmentation pairs
+- `08_crack_density.png` — crack pixel density histogram per dataset
+- `09_image_dimensions.png` — resolution scatter across all datasets
+- `10_rgb_histograms.png` — per-channel RGB intensity histograms
+- `11_tsne.png` — EfficientNet-B4 feature space t-SNE (if CSV present)
+
+**New visualisations added 2026-06-10:**
+- `04c_bbox_violin.png` — per-class bbox width/height violin plots (replaces scatter for distribution shape)
+- `04b_cooccurrence.png` — defect class co-occurrence matrix (raw counts + conditional probability)
+- `05b_perclass_heatmaps.png` — 5 independent per-class spatial density maps (★ = peak location)
+- `08b_crack_morphology.png` — connected-component analysis: segment area (log), segments/image, boxplot
+- `10b_brightness_contrast.png` — brightness + contrast violins across all 6 datasets (domain shift)
 
 **Key findings to highlight in the presentation:**
 
@@ -219,6 +239,11 @@ Added a new exploratory data analysis notebook as the first notebook in the pipe
 | Spatial heatmap: defects uniformly distributed (no positional bias) | Data quality slide |
 | RGB histogram shift: DACL10K/CrackForest vs StructDamage | Motivates ImageNet normalisation + domain adaptation narrative |
 | t-SNE: CrackForest/HistoricalCrack/Masonry cluster separately | Feature space separation slide / cross-domain explanation |
+| Co-occurrence: crack co-occurs with efflorescence/spalling in majority of images | Motivates joint multi-class detection (not 5 binary classifiers) |
+| BBox violin: crack boxes narrow + elongated; weathering large + diffuse; wetspot tiny | Explains class-specific mAP ordering (weathering 22.7%, wetspot 6.6%) |
+| Per-class heatmaps: wetspot/efflorescence mild lower-centre bias; crack/weathering uniform | Dataset collection artefact slide; spatial prior analysis |
+| Crack morphology: CrackForest = many small segments; Masonry = few large ones | Explains why FN risk differs between datasets |
+| Brightness violins: CrackForest darker than neutral grey; Masonry lowest contrast | Justifies colour jitter augmentation parameters (±0.3) |
 
 **Slides to add/update:**
 - Add a "Dataset Overview" slide with the horizontal bar chart (`01_dataset_overview.png`)
@@ -226,6 +251,10 @@ Added a new exploratory data analysis notebook as the first notebook in the pipe
 - Add the segmentation gallery (`07_segmentation_gallery.png`) — visually strong slide
 - Add the spatial heatmap (`05_bbox_heatmap.png`) if slide count allows
 - Update any dataset totals (was 27,274 → now 57,291 including OmniCrack30K)
+- **NEW:** Add co-occurrence matrix slide (`04b_cooccurrence.png`) to detection methods section
+- **NEW:** Add per-class density maps (`05b_perclass_heatmaps.png`) — replaces or accompanies combined heatmap
+- **NEW:** Add bbox violin plot (`04c_bbox_violin.png`) — explains class-specific mAP results
+- **NEW:** Add brightness/contrast slide (`10b_brightness_contrast.png`) to domain adaptation motivation
 
 ---
 
@@ -233,3 +262,4 @@ Added a new exploratory data analysis notebook as the first notebook in the pipe
 
 - [ ] PowerPoint — update slides using tables above (detection, segmentation, cross-dataset, failure analysis, notebook numbers)
 - [ ] PowerPoint — add EDA slides (dataset overview bar chart, DACL10K class dist, segmentation gallery)
+- [ ] PowerPoint — add new EDA visuals: co-occurrence matrix, per-class heatmaps, bbox violins, brightness/contrast

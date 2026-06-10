@@ -296,11 +296,109 @@ No strong positional bias was found, indicating that the dataset does not trivia
 
 \textbf{Domain shift.}
 RGB channel histograms reveal that DACL10k and CrackForest images are greyer and have lower saturation than
-StructDamage (concrete vs. general building photography).
+StructDamage (concrete vs.\ general building photography).
 This motivates the use of ImageNet normalisation
 $\hat{x}_c = (x_c - \mu_c)/\sigma_c$ with $\boldsymbol{\mu}=(0.485, 0.456, 0.406)$ and
 $\boldsymbol{\sigma}=(0.229, 0.224, 0.225)$, which maps each dataset's pixel distribution closer to the
 ImageNet statistics assumed by the pre-trained backbone weights.
+To quantify this gap numerically, Figure~\ref{fig:brightness_contrast} plots violin distributions of mean
+greyscale intensity (brightness) and pixel standard deviation (contrast) across all six datasets.
+CrackForest images are consistently darker than the ImageNet neutral grey ($\mu=128$), while StructDamage
+is brighter.
+Contrast is highest for CrackForest and lowest for Masonry, confirming that hairline cracks in Masonry
+are harder to separate from background texture on the basis of intensity contrast alone.
+These measurements directly informed the colour jitter augmentation parameters (brightness $\pm 0.3$,
+contrast $\pm 0.3$) used throughout training.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/10b_brightness_contrast.png}
+\caption{Domain shift quantified via brightness (mean greyscale intensity) and contrast (pixel std dev)
+across all six datasets. Each violin shows the full distribution over 120 sampled images; the white bar
+spans the interquartile range. Datasets below the neutral grey line (128) will produce systematically
+different activations in an ImageNet-pretrained backbone, motivating colour jitter augmentation.}
+\label{fig:brightness_contrast}
+\end{figure}
+
+\textbf{Defect class co-occurrence.}
+Beyond marginal class counts, the co-occurrence structure of DACL10k annotations is informative.
+Counting how many training images contain each pair of defect classes and row-normalising yields a
+conditional probability matrix $P(\text{col class} \mid \text{row class present})$
+(Figure~\ref{fig:cooccurrence}).
+Crack is present in a large fraction of images annotated with other damage types (efflorescence, spalling),
+while wetspot tends to appear as a more isolated finding.
+These co-occurrence patterns motivate joint multi-class detection rather than five independent binary
+classifiers; they also explain a source of hard negatives where two visually similar damage types
+(e.g.\ crack vs.\ efflorescence edges) co-exist in the same bounding box region.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/04b_cooccurrence.png}
+\caption{DACL10k defect class co-occurrence matrix. Left: raw image counts per class pair (diagonal =
+total images containing that class). Right: conditional probability
+$P(\text{col class} \mid \text{row class present})$, row-normalised.
+High off-diagonal values indicate classes that reliably co-occur, motivating joint multi-label detection.}
+\label{fig:cooccurrence}
+\end{figure}
+
+\textbf{Bounding-box size morphology.}
+The scatter plot of normalised bounding-box dimensions (Figure~\ref{fig:dacl_class_dist}) suggests
+class-specific size clusters, but the full distribution shape is better characterised by violin plots
+(Figure~\ref{fig:bbox_violin}).
+Crack boxes are narrow (low width, broad height) consistent with elongated fractures; weathering and
+efflorescence produce large, diffuse boxes covering broad surface areas; wetspot boxes cluster near
+zero in both dimensions, indicating small localised patches.
+These scale differences directly inform the observed class-specific mAP ordering
+(weathering highest at 22.7\%, wetspot lowest at 6.6\%) and motivate the use of SAHI tiling for small
+wetspot and crack instances.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{../outputs/eda/04c_bbox_violin.png}
+\caption{Per-class bounding-box width (left) and height (right) distributions as violin plots.
+White horizontal line = median; thick white bar = interquartile range.
+Crack boxes are narrow and elongated; weathering boxes are large and diffuse;
+wetspot boxes are systematically small.}
+\label{fig:bbox_violin}
+\end{figure}
+
+Per-class spatial density maps (Figure~\ref{fig:perclass_heatmaps}) decompose the aggregate
+annotation heatmap into five independent views.
+Weathering and crack show near-uniform spatial distributions across the image plane,
+while efflorescence and wetspot exhibit mild clustering in the lower-centre region,
+consistent with gravity-driven salt crystallisation and moisture accumulation at facade bases.
+No class shows a strong positional bias that would trivially reward spatial anchoring strategies.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]{../outputs/eda/05b_perclass_heatmaps.png}
+\caption{Per-class annotation density maps (Gaussian-smoothed, $\sigma=2.5$, $60\times60$ grid)
+for each of the five DACL10k defect classes.
+Each map is independently normalised; $\bigstar$ marks the densest grid cell.
+Colour scales use class-matched colourmaps for visual distinctiveness.}
+\label{fig:perclass_heatmaps}
+\end{figure}
+
+\textbf{Crack morphology.}
+Crack pixel density $\rho$ characterises the aggregate crack burden per image, but the
+\textit{structure} of cracks --- how many disconnected segments exist, and how large each is ---
+is equally relevant to segmentation difficulty.
+Connected-component labelling of every ground-truth binary mask (Figure~\ref{fig:crack_morphology})
+reveals that CrackForest images contain multiple small, disconnected crack segments (hairline cracking
+network), while Masonry images contain fewer but larger connected components.
+This structural difference predicts that false-negative risk is higher on CrackForest (where many
+thin branches must each be detected), while geometric precision matters more on Masonry (where
+large region boundaries must be traced accurately).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]{../outputs/eda/08b_crack_morphology.png}
+\caption{Crack morphology analysis via connected-component labelling. Left: log-scale distribution of
+crack segment area (px$^2$) per dataset; dashed lines indicate class means. Centre: number of distinct
+crack segments per image. Right: box-plot comparison of log segment area.
+CrackForest has more, smaller segments; Masonry has fewer, larger ones.}
+\label{fig:crack_morphology}
+\end{figure}
 
 %% ════════════════════════════════════════════════════════════
 \clearpage
@@ -452,27 +550,23 @@ The key fine-tuning hyperparameters and their rationale:
 
 The segmentation model uses MAnet (Multi-scale Attention Network) decoder paired with MiT-B2 (Mix Transformer Block 2) encoder initialised from ImageNet pre-trained weights, implemented via the \texttt{segmentation-models-pytorch} library. MiT-B2 is a vision transformer backbone that captures multi-scale hierarchical features through a mix of convolutional and transformer blocks, producing feature maps at multiple scales (stride 4, 8, 16, 32). Unlike pure convolutional encoders, the transformer layers enable long-range spatial context aggregation, critical for capturing crack branching patterns across diverse morphologies (hairline cracks in mortar joints to wide fractures in stone).
 
-The MAnet decoder applies multi-scale attention gates to fuse features from different encoder levels, allowing the model to dynamically weight which scales contribute to final predictions. This is particularly effective for heritage materials where crack morphology varies dramatically: thin hairline fractures through mortar joints require high-resolution early features, while wide structural cracks demand long-range context from deeper layers. Final output is a $512 \times 512$ binary map (crack / background) obtained by applying sigmoid activation to the single output channel. Deployment uses threshold 0.8 (inverted logic: values $< 0.8$ indicate cracks), which was empirically tuned on the validation set to balance false positives and false negatives in heritage materials.
+The MAnet decoder applies multi-scale attention gates to fuse features from different encoder levels, allowing the model to dynamically weight which scales contribute to final predictions. This is particularly effective for heritage materials where crack morphology varies dramatically: thin hairline fractures through mortar joints require high-resolution early features, while wide structural cracks demand long-range context from deeper layers. Final output is a $512 \times 512$ binary map (crack / background) obtained by applying sigmoid activation to the single output channel. The production checkpoint (\texttt{segmentor\_v4}) uses a threshold of 0.60 calibrated via a validation-set sweep; predictions above 0.60 are classified as crack. An earlier intermediate checkpoint (v2) required an inverted threshold of 0.8 due to a miscalibrated sigmoid output, but this was resolved by a full retrain (v4) with corrected loss supervision.
 
 \subsubsection{Loss Function Design}
 
-The loss function is a sum of Focal loss and Tversky loss, weighted equally:
+The loss function combines Tversky loss and Lov\'{a}sz loss with equal weighting:
 
 \begin{equation}
-\mathcal{L} = \mathcal{L}_\text{focal} + \mathcal{L}_\text{tversky}
+\mathcal{L} = 0.5\,\mathcal{L}_\text{tversky} + 0.5\,\mathcal{L}_\text{lov\'{a}sz}
 \end{equation}
-
-\textbf{Focal loss} \cite{lin2017focal} modifies binary cross-entropy by down-weighting easy background predictions:
-\begin{equation}
-\mathcal{L}_\text{focal} = -\alpha_t (1 - p_t)^\gamma \log p_t
-\end{equation}
-with $\gamma=2$ and $\alpha_t$ set by class frequency (crack: 0.9, background: 0.1). This prevents the 97\% background class from dominating gradient updates.
 
 \textbf{Tversky loss} generalises the Dice coefficient by separately weighting false positives and false negatives:
 \begin{equation}
 \mathcal{L}_\text{tversky} = 1 - \frac{\text{TP}}{\text{TP} + \alpha \cdot \text{FP} + \beta \cdot \text{FN}}
 \end{equation}
 with $\alpha=0.3$, $\beta=0.7$. Setting $\beta > \alpha$ penalises false negatives (missed crack pixels) more heavily than false positives, which is appropriate for structural damage assessment where missed cracks carry higher safety cost than false alarms.
+
+\textbf{Lov\'{a}sz loss}~\cite{berman2018lovasz} is a surrogate loss that directly optimises the mean Intersection over Union by computing the Lov\'{a}sz extension of the submodular IoU loss. Unlike cross-entropy or Tversky, Lov\'{a}sz is calibrated to the evaluation metric itself, producing better-calibrated probability outputs and avoiding the over-confidence that simple binary cross-entropy produces on extreme class-imbalance datasets. The combination of Tversky (which emphasises recall on crack pixels) and Lov\'{a}sz (which optimises the IoU surface) addresses both the class imbalance and the metric alignment objectives simultaneously.
 
 \subsubsection{Training Protocol}
 
@@ -1407,6 +1501,12 @@ T.-Y.~Lin, P.~Goyal, R.~Girshick, K.~He, and P.~Doll{\'a}r,
 ``Focal loss for dense object detection,''
 in \textit{Proc.\ IEEE Int.\ Conf.\ Comput.\ Vis.\ (ICCV)},
 Venice, Italy, Oct.\ 2017, pp.\ 2980--2988.
+
+\bibitem{berman2018lovasz}
+M.~Berman, A.~R.~Triki, and M.~B.~Blaschko,
+``The Lov\'{a}sz-Softmax loss: A tractable surrogate for the optimisation of the intersection-over-union measure in neural networks,''
+in \textit{Proc.\ IEEE Conf.\ Comput.\ Vis.\ Pattern Recognit.\ (CVPR)},
+Salt Lake City, UT, USA, Jun.\ 2018, pp.\ 4413--4421.
 
 \end{thebibliography}
 
