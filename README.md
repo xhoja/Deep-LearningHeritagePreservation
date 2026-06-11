@@ -28,7 +28,7 @@
 | **Sliced Inference** | SAHI | Tiled detection for small crack localisation |
 | **Classical CV** | OpenCV | CLAHE, FFT high-pass, Gabor filter bank, SSIM |
 | **Frontend** | HTML / Tailwind CSS / Vanilla JS | Single-page webapp with before/after comparison mode |
-| **Training Platform** | Google Colab T4 GPU | All models trained on T4 (14 GB VRAM) |
+| **Training Platform** | Google Colab T4 GPU | All models trained on T4 (16 GB VRAM) |
 
 ---
 
@@ -293,7 +293,7 @@ python infer.py \
 | Classification | Accuracy, F1, AUC-ROC | >95% accuracy | **99.83% acc ✓** |
 | Classification (fine-tuned, heritage domain) | Accuracy, F1 | — | **99.4% combined / 98.1% heritage recall** |
 | Detection v1 baseline (YOLOv8s, single-phase) | mAP@50 | — | val **96.7%** → test **34.6%** (not deployed — mixed DACL10K + OmniCrack30k data caused annotation noise that inflated val metrics) |
-| Detection v2 (YOLOv8l, 3-phase progressive) | mAP@50 | >70% | val **70.30%** → test **50.3%** (97-image subset, formal eval) → TTA **63.0%** (581-image split, notebook 05) ✓ |
+| Detection v2 (YOLOv8l, 3-phase progressive) | mAP@50 | >70% | val **70.30%** → test **50.3%** (97-image subset, formal eval) → TTA **63.0%** (581-image split, notebook 05) ✓ (val only) |
 | Detection (multi-class DACL10K) | mAP@50 (5-class) | — | val **13.48%** (crack 12.71%, weathering 22.65%) |
 | Detection (fine-tuned, heritage) | mAP@50 | — | **23.6% combined / 28.4% CrackForest / 23.1% Masonry** |
 | Segmentation v1 baseline (U-Net + ResNet34) | Crack IoU, mIoU | — | Crack IoU **68.43%** / mIoU **83.56%** / Dice **81.26%** |
@@ -309,7 +309,7 @@ Trained on T4 GPU (Google Colab), 30 epochs, AMP enabled, effective batch size 3
 | Validation (best, epoch 9) | 99.32% | 98.26% | 99.98% |
 | **Test** | **99.83%** | **99.56%** | **≈100%** |
 
-All three SotA thresholds exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
+Classification SotA threshold exceeded. See `notebooks/01_classification.ipynb` for training curves, confusion matrix, and Grad-CAM visualisations.
 
 
 ### Task 2 — Detection Results (YOLOv8l, OmniCrack30k Phase Training)
@@ -325,7 +325,7 @@ Validation mAP@50 = 0.5784 | Test mAP@50 = 0.4939
 Validation mAP@50 = **0.7030** | Test mAP@50 = **0.503** (97-image subset, formal eval) ✓ (Best single phase)
 
 **Phase 3 (1024px, 30 epochs, fine-tune, batch=8):**  
-Test mAP@50 = 0.4166 (degraded — high resolution with same batch size caused val/test gap)
+Test mAP@50 = 0.4166 (degraded — high resolution caused overfitting; batch halved to 8 was insufficient)
 
 **Ensemble Evaluation (Phase 1+2+3):**  
 Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5522) + P3 (0.4166) = avg confidence 0.1920. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
@@ -360,7 +360,7 @@ Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + e
 
 **Previous baseline (v1 — U-Net + ResNet34):** mIoU 83.56%, Crack IoU 68.43%, Dice 81.26%
 
-**Improvement:** +27.8pp Crack IoU (+16.2pp vs SotA target of 80%). All three SotA thresholds exceeded. See `notebooks/03_segmentation.ipynb` for training curves, phase progressions, and prediction visualisations.
+**Improvement:** +29.1pp Crack IoU (+17.5pp vs SotA target of 80%). Classification and segmentation SotA thresholds exceeded; detection val target met (70.30% val). See `notebooks/03_segmentation.ipynb` for training curves, phase progressions, and prediction visualisations.
 
 
 ### Task 4 — Cross-Dataset Evaluation (`notebooks/04_cross_dataset_eval.ipynb`)
@@ -466,7 +466,7 @@ The upgraded YOLOv8l detector is far more precise than the previous YOLOv8s base
 
 #### Segmentation — Cross-Domain Failure Cases (MAnet + mit_b2, segmentor_v4)
 
-Evaluated on Masonry + CrackForest combined (358 images) — both cross-domain relative to OmniCrack30k training data:
+Evaluated on Masonry + CrackForest combined (358 images) — in-distribution for segmentor_v4 (trained on OmniCrack30k + CrackForest + Masonry), presented here as a held-out test split:
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -560,7 +560,7 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 **Key findings:**
 
 1. **Heritage recall jumps +26.9 pp** — 71.2% → 98.1% on the masonry+crackforest subset, confirming the domain gap was in higher-level appearance priors learnable from 250 images.
-2. **In-distribution performance preserved** — combined test acc 95.2% → 99.4%, historical_crack performance essentially unchanged.
+2. **In-distribution performance preserved** — combined test accuracy 99.4%, historical_crack performance essentially unchanged.
 3. **GradCAM attention shifts** — post fine-tuning, the model attends to crack edges and branching structures in masonry images rather than irrelevant background textures.
 
 
@@ -660,7 +660,7 @@ Upload two photographs of the same location at different dates. The backend appl
 | **Verdict** | Automated conservation recommendation based on combined delta thresholds |
 | **JSON export** | Full comparison report with all deltas and filter applied |
 
-Synthetic degradation examples from notebook 09 (`deg_s0_r0.jpg` → `deg_s3_r0.jpg`) serve as ground-truth before/after pairs for demo and validation.
+Synthetic degradation examples from notebook 08 (`deg_s0_r0.jpg` → `deg_s3_r0.jpg`) serve as ground-truth before/after pairs for demo and validation.
 
 > **Note on classifier vs. detector/segmentor agreement:** The classifier operates on global image statistics and is more sensitive to domain shift than the detector/segmentor, which share spatial-feature inductive biases. The severity card surfaces this disagreement explicitly (X/3 models agree) rather than hiding it behind a single score.
 
