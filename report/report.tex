@@ -807,8 +807,9 @@ CrackForest & Out-of-distribution & Recall & 89.83\% \\
 Masonry & Out-of-distribution & Recall & 76.67\% \\
 \midrule
 \rowcolor{white}\multicolumn{4}{l}{\textit{Segmentor (MAnet / MiT-B2)}} \\
-CrackForest subset & In-distribution & mIoU & 73.61\% \\
-Masonry subset & In-distribution & mIoU & 86.92\% \\
+CrackForest subset & In-distribution (subset)$^\dagger$ & mIoU & 73.61\% \\
+Masonry subset & In-distribution (subset)$^\dagger$ & mIoU & 86.92\% \\
+Segmentor --- Masonry+CrackForest (cross-domain, OmniCrack weights) & Out-of-distribution & mIoU & 59.49\% \\
 \midrule
 \rowcolor{white}\multicolumn{4}{l}{\textit{Detector (YOLOv8l)}} \\
 OmniCrack30k test & In-distribution & mAP@50 & 50.28\% \\
@@ -816,11 +817,12 @@ CrackForest & Out-of-distribution & mAP@50 & 4.76\% \\
 Masonry & Out-of-distribution & mAP@50 & 1.13\% \\
 \bottomrule
 \end{tabular}
+\par\vspace{2pt}\footnotesize{$^\dagger$ CrackForest and Masonry were included in segmentor training. These figures reflect within-distribution subset performance, not cross-domain generalisation.}
 \end{table}
 
 \textbf{Classifier generalisation.} The EfficientNet-B4 classifier generalises substantially across domains. On CrackForest (road surface cracks), recall reaches 89.83\%, a drop of only 9.97 pp from the in-distribution performance. On Masonry (heritage wall cracks), recall is 76.67\%, a larger drop of 23.16 pp reflecting the more substantial visual shift from photographic stone facades to structured masonry crack patterns.
 
-\textbf{Segmentor generalisation.} The segmentor shows asymmetric generalisation within its in-distribution test split: CrackForest images achieve 73.61\% mIoU (crack IoU: 48.78\%, Dice: 65.58\%), while Masonry images achieve 86.92\% mIoU (crack IoU: 75.01\%, Dice: 85.72\%). The 13.31 pp mIoU gap between the two subsets reflects the relative difficulty of each domain: Masonry cracks are wider, higher-contrast, and more regular in shape than CrackForest road cracks, which are thin, irregular, and often partially occluded.
+\textbf{Segmentor generalisation.} Note that CrackForest and Masonry were both included in the segmentor's training set; the figures in Table~\ref{tab:cross_eval} are within-distribution subset performance, not cross-domain generalisation. Within-subset mIoU is 73.61\% (CrackForest; crack IoU: 48.78\%, Dice: 65.58\%) and 86.92\% (Masonry; crack IoU: 75.01\%, Dice: 85.72\%). The 13.31 pp gap reflects morphological difficulty: Masonry cracks are wider and higher-contrast than the thin, irregular CrackForest road cracks. The true cross-domain result -- evaluating the OmniCrack30k-pretrained segmentor on the combined Masonry+CrackForest test set -- is 59.49\% mIoU (Crack IoU: 35.24\%, Background IoU: 83.75\%, Dice: 44.85\%), a substantial drop that reflects the domain gap between pavement and heritage building surfaces.
 
 \textbf{Detector generalisation.} The detector shows catastrophic cross-domain collapse: mAP@50 drops from 50.28\% on the OmniCrack30k test set to 4.76\% on CrackForest and 1.13\% on Masonry -- near-random performance. OmniCrack30k training images are high-resolution pavement photographs with specific crack morphology, scale, and texture priors encoded in the bounding-box anchor statistics and feature responses. These priors do not transfer to heritage masonry, where crack scale, aspect ratio, and texture context are all systematically different. This finding directly motivates the domain adaptation experiments in Section~\ref{sec:domain_adapt}.
 
@@ -967,7 +969,7 @@ The classifier generalises with near-certainty to both OOD crack domains. The me
 
 \begin{table}[H]
 \centering
-\caption{YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Recall of 1.000 confirms the detector never misses an actual crack.}
+\caption{YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Precision 0.652 reflects selective firing; recall 0.296 reflects the OmniCrack30k-to-HistoricalCrack domain gap.}
 \label{tab:det_fail}
 \rowcolors{2}{lightgray}{white}
 \begin{tabular}{lcc}
@@ -975,18 +977,18 @@ The classifier generalises with near-certainty to both OOD crack domains. The me
 \rowcolor{white}
 \textbf{Metric} & \textbf{Value} & \textbf{Interpretation} \\
 \midrule
-True Positives & 152 & Correctly detected cracks \\
-False Positives & 628 & Intact textures incorrectly flagged \\
-False Negatives & \textbf{0} & No actual cracks missed \\
-Precision & 0.195 & Low: detector over-fires on non-crack textures \\
-Recall & \textbf{1.000} & Perfect: every real crack is detected \\
+True Positives & 45 & Correctly detected cracks \\
+False Positives & 24 & Intact textures incorrectly flagged \\
+False Negatives & \textbf{107} & \textbf{Actual cracks missed by detector} \\
+Precision & \textbf{0.652} & Selective: detector does not over-fire on heritage textures \\
+Recall & 0.296 & Low: domain gap causes majority of cracks to be missed \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The detector fires on all 780 test images, including 624 intact building facades, generating 628 false-positive boxes. This is a domain adaptation failure: OmniCrack30k training images are pavement and concrete photographs; HistoricalCrack contains plaster and stone facade textures that the detector responds to as crack-like. However, the safety-critical metric -- recall -- is 1.000. The detector never misses a real crack. For structural damage assessment, this failure mode is preferable to the converse (missed cracks with high precision).
+The upgraded YOLOv8l detector is far more conservative than the YOLOv8s baseline: it fires selectively, achieving precision 0.652, because it does not respond indiscriminately to all heritage textures. However, recall is only 0.296 -- the detector misses 107 of 152 cracked images. This is a domain adaptation failure in the opposite direction: OmniCrack30k training images are pavement and concrete photographs, and the features learned for those surfaces do not transfer to HistoricalCrack plaster and stone facade textures. The critical failure mode is therefore Type B (silent misses), not Type A (false alarms).
 
-The chained pipeline architecture directly addresses the precision problem. In practice, the upstream classifier (99.49\% test accuracy) gates the detector and rejects intact images before they reach the detection stage. This eliminates the 624 intact images and their associated 628 false positives, raising practical operating precision substantially without modifying the detector.
+The chained pipeline architecture partially compensates. The upstream classifier (99.49\% test accuracy) gates the detector and rejects intact images before they reach the detection stage, reducing the false-positive load. However, the low detector recall means the pipeline will miss cracks that the classifier correctly flags as cracked -- a direct consequence of the OmniCrack30k-to-HistoricalCrack domain gap that motivates the domain adaptation experiments in Section~\ref{sec:domain_adapt}.
 
 Confidence histogram analysis shows that TP and FP detections have substantially overlapping confidence distributions, confirming that threshold selection alone cannot cleanly separate them on this domain.
 
@@ -1020,7 +1022,7 @@ The 10.6\% of images with crack IoU below 0.50 represent the most challenging ca
 
 \begin{table}[H]
 \centering
-\caption{Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 0 is the key safety result: the two models are fully consistent on all positive (damaged) cases.}
+\caption{Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 111 is the critical failure mode: the detector silently misses cracks the classifier flags, a direct consequence of the OmniCrack30k-to-HistoricalCrack domain gap.}
 \label{tab:cross_task}
 \rowcolors{2}{lightgray}{white}
 \begin{tabular}{lcc}
@@ -1028,14 +1030,14 @@ The 10.6\% of images with crack IoU below 0.50 represent the most challenging ca
 \rowcolor{white}
 \textbf{Consistency Check} & \textbf{Count} & \textbf{Interpretation} \\
 \midrule
-Type A: classifier=intact, detector fires (FP load) & 624 & Expected: detector over-fires on all 624 intact images \\
-Type B: classifier=cracked, detector silent (missed crack) & \textbf{0} & Critical: no positive case missed by detector \\
-Classifier-detector agreement on cracked images & 156 / 156 & 100\% agreement on positive cases \\
+Type A: classifier=intact, detector fires (FP load) & 24 & Classifier gate working well: intact images rarely reach detector \\
+Type B: classifier=cracked, detector silent (missed crack) & \textbf{111} & \textbf{Critical: detector misses cracks the classifier flags} \\
+Classifier-detector agreement on cracked images & 645 / 780 & 82.7\% overall agreement \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Type B = 0 confirms that the two models are fully consistent on all positive (damaged) cases: every image that the classifier labels as cracked is also confirmed by the detector. The 624 Type A cases are the source of all false-positive detection boxes and are directly addressed by the classifier gate in the inference pipeline. The 100\% agreement rate on positive cases means the two models would produce consistent final reports for every genuinely damaged image in the dataset.
+Type A drops from the YOLOv8s baseline value of 624 to 24, confirming that the classifier gate is working well: intact images are rarely forwarded to the detector. However, Type B = 111 is the critical failure mode: the detector silently misses 111 cracked images that the classifier correctly flags. This is a direct consequence of the OmniCrack30k-to-HistoricalCrack domain gap -- the detector has not learned features that transfer to building facade textures. Overall classifier-detector agreement is 645/780 (82.7\%). This consistency gap motivates the domain adaptation experiments in Section~\ref{sec:domain_adapt}, which target the detector recall deficit.
 
 %% ════════════════════════════════════════════════════════════
 \clearpage
@@ -1327,7 +1329,7 @@ The central finding of this project is that cross-dataset generalisation in crac
 \begin{itemize}[leftmargin=1.5cm]
 \item The \textbf{classifier} generalises gracefully. EfficientNet-B4 retains 76.67--89.83\% cracked recall across OOD domains, suggesting that semantic crack features (elongated low-contrast boundaries, branching structures) are domain-invariant at the level of global image statistics. The classifier's task is binary and does not require spatial localisation, which reduces sensitivity to domain-specific texture priors.
 
-\item The \textbf{segmentor} generalises moderately. MAnet achieves 73.61--86.92\% mIoU across the two source domains in its test split, with 13 pp of variance attributable to morphological differences (narrow irregular CrackForest cracks vs. wider higher-contrast Masonry cracks). The segmentor requires spatial reasoning but operates at pixel level, and its encoder-decoder architecture with skip connections preserves fine spatial information that supports generalisation to new crack morphologies.
+\item The \textbf{segmentor} generalises moderately to genuinely out-of-distribution data. Within-subset (in-distribution) mIoU is 73.61--86.92\% on CrackForest and Masonry, both of which were in the training set. The true cross-domain result (OmniCrack30k-pretrained weights on combined Masonry+CrackForest) is 59.49\% mIoU, a 14--27 pp drop that nonetheless indicates partial transfer. The encoder-decoder architecture with skip connections preserves spatial information that supports crack-structure generalisation across surface types.
 
 \item The \textbf{detector} does not generalise without adaptation. YOLOv8l collapses to near-zero mAP on heritage surfaces (4.76\% and 1.13\%). Object detectors encode strong spatial priors through anchor box statistics and through the feature pyramid scale assignments that determine which detection head handles which object size. OmniCrack30k crack bounding boxes have specific aspect ratio and size distributions (large pavement cracks at 640px resolution) that do not match heritage crack boxes (thin wall cracks at different apparent scale and aspect ratio).
 \end{itemize}
@@ -1342,7 +1344,7 @@ However, the absolute post-adaptation detector performance (23.6\% mAP@50) remai
 
 \subsection{The Chained Pipeline Architecture Compensates for Detector Weaknesses}
 
-The sequential classifier-detector-segmentor pipeline provides a natural compensation mechanism for the detector's high false-positive rate. The classifier, which generalises well, acts as a domain-level filter: its 99.49\% accuracy on intact images means that 624 of the 780 intact test images are routed away from the detector before it can generate false alarms. This architectural decision converts a precision problem (low detector precision on heritage surfaces) into a solved problem (high classifier accuracy on the intact/cracked binary task).
+The sequential classifier-detector-segmentor pipeline provides a natural compensation mechanism for the detector's domain gap. The classifier, which generalises well, acts as a domain-level filter: its 99.49\% accuracy on intact images means that the vast majority of intact test images are routed away from the detector before it can generate false alarms (Type A cases drop from 624 to 24 when using the upgraded YOLOv8l). The dominant remaining failure mode is Type B: 111 cracked images are missed by the detector even after the classifier correctly flags them, which the pipeline cannot compensate for without improving detector recall on heritage surfaces.
 
 This finding suggests a general design principle for heritage inspection systems: invest heavily in classification-level quality (which requires less labelled data and generalises better) and use it to gate more specialised localisation modules that may be noisier on OOD data.
 
@@ -1427,7 +1429,7 @@ This paper presents a comprehensive multi-task deep learning pipeline for automa
 \textbf{Hyperparameter} & \textbf{Classifier (Task 1)} & \textbf{Detector (Task 2)} & \textbf{Segmentor (Task 3)} \\
 \midrule
 Architecture & EfficientNet-B4 & YOLOv8l & MAnet / MiT-B2 \\
-Parameters & 19M & 11.2M & 39M \\
+Parameters & 19M & 43.6M & 39M \\
 Input resolution & 380$\times$380 & 416$\times$416 & 384$\times$384 \\
 Optimiser & AdamW & SGD (built-in) & AdamW \\
 Initial LR & $1 \times 10^{-4}$ & 0.01 & $3 \times 10^{-4}$ \\
