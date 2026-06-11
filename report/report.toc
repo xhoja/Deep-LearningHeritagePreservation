@@ -37,78 +37,78 @@
 \contentsline {subsection}{\numberline {6.2}Task 2: Detection Results}{27}{subsection.6.2}%
 \contentsline {subsection}{\numberline {6.3}Task 3: Segmentation Results}{28}{subsection.6.3}%
 \contentsline {subsection}{\numberline {6.4}Cross-Dataset Evaluation}{29}{subsection.6.4}%
-\contentsline {section}{\numberline {7}Domain Adaptation}{30}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{30}{subsection.7.1}%
-\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{30}{subsubsection.7.1.1}%
-\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{30}{subsubsection.7.1.2}%
-\contentsline {subsubsection}{\numberline {7.1.3}Results}{30}{subsubsection.7.1.3}%
-\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{31}{subsubsection.7.1.4}%
-\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{31}{subsection.7.2}%
-\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{31}{subsubsection.7.2.1}%
-\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{31}{subsubsection.7.2.2}%
-\contentsline {subsubsection}{\numberline {7.2.3}Results}{31}{subsubsection.7.2.3}%
-\contentsline {section}{\numberline {8}Failure Analysis}{32}{section.8}%
-\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{32}{subsection.8.1}%
-\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{33}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{33}{subsection.8.3}%
-\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{34}{subsection.8.4}%
-\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{34}{subsection.8.5}%
-\contentsline {section}{\numberline {9}Additional Experiments}{35}{section.9}%
-\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{35}{subsection.9.1}%
-\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{35}{subsubsection.9.1.1}%
-\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{35}{subsubsection.9.1.2}%
-\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{36}{subsection.9.2}%
-\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{36}{subsubsection.9.2.1}%
-\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{36}{subsubsection.9.2.2}%
-\contentsline {subsubsection}{\numberline {9.2.3}Results}{36}{subsubsection.9.2.3}%
-\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{37}{subsection.9.3}%
-\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{37}{subsubsection.9.3.1}%
-\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{37}{subsubsection.9.3.2}%
-\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{38}{subsubsection.9.3.3}%
-\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{39}{subsubsection.9.3.4}%
-\contentsline {section}{\numberline {10}Web Application}{40}{section.10}%
-\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{40}{subsection.10.1}%
-\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{40}{subsection.10.2}%
-\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{41}{subsection.10.3}%
-\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{41}{subsection.10.4}%
-\contentsline {section}{\numberline {11}Discussion}{42}{section.11}%
-\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{42}{subsection.11.1}%
-\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{42}{subsection.11.2}%
-\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{43}{subsection.11.3}%
-\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{43}{subsection.11.4}%
-\contentsline {subsection}{\numberline {11.5}Sigmoid Calibration and Threshold Discovery in Deployment}{43}{subsection.11.5}%
-\contentsline {subsection}{\numberline {11.6}Limitations}{44}{subsection.11.6}%
-\contentsline {section}{\numberline {12}Conclusions}{44}{section.12}%
-\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{46}{appendix.A}%
-\contentsline {section}{\numberline {B}Software Environment}{46}{appendix.B}%
-\contentsline {part}{Article Reading Survey}{49}{section*.42}%
-\contentsline {section}{\numberline {C}Introduction}{49}{appendix.C}%
-\contentsline {section}{\numberline {D}Foundational Convolutional Architectures}{49}{appendix.D}%
-\contentsline {subsection}{\numberline {D.1}Deep Residual Learning: ResNet}{49}{subsection.D.1}%
-\contentsline {subsection}{\numberline {D.2}EfficientNet: Compound Model Scaling}{50}{subsection.D.2}%
-\contentsline {section}{\numberline {E}Semantic Segmentation}{50}{appendix.E}%
-\contentsline {subsection}{\numberline {E.1}Fully Convolutional Networks}{50}{subsection.E.1}%
-\contentsline {subsection}{\numberline {E.2}U-Net: Symmetric Encoder-Decoder for Dense Prediction}{51}{subsection.E.2}%
-\contentsline {subsection}{\numberline {E.3}DeepLabV3+: Atrous Convolutions and Contextual Aggregation}{51}{subsection.E.3}%
-\contentsline {section}{\numberline {F}Object Detection}{52}{appendix.F}%
-\contentsline {subsection}{\numberline {F.1}Faster R-CNN: Region-Based Detection}{52}{subsection.F.1}%
-\contentsline {subsection}{\numberline {F.2}Feature Pyramid Networks}{52}{subsection.F.2}%
-\contentsline {subsection}{\numberline {F.3}YOLO: Real-Time Single-Stage Detection}{53}{subsection.F.3}%
-\contentsline {section}{\numberline {G}Crack Detection and Structural Damage Datasets}{53}{appendix.G}%
-\contentsline {subsection}{\numberline {G.1}From Classical to Deep Crack Detection}{53}{subsection.G.1}%
-\contentsline {subsection}{\numberline {G.2}DeepCrack: Hierarchical Feature Learning for Crack Segmentation}{53}{subsection.G.2}%
-\contentsline {subsection}{\numberline {G.3}OmniCrack30k: Large-Scale Crack Segmentation}{54}{subsection.G.3}%
-\contentsline {subsection}{\numberline {G.4}Masonry Crack Detection and the Dais Dataset}{54}{subsection.G.4}%
-\contentsline {section}{\numberline {H}Heritage Building Damage Assessment}{55}{appendix.H}%
-\contentsline {subsection}{\numberline {H.1}Computer Vision for Cultural Heritage: A Survey}{55}{subsection.H.1}%
-\contentsline {subsection}{\numberline {H.2}The DACL10k Dataset}{55}{subsection.H.2}%
-\contentsline {section}{\numberline {I}Transfer Learning and Domain Adaptation}{56}{appendix.I}%
-\contentsline {subsection}{\numberline {I.1}Transfer Learning for Computer Vision}{56}{subsection.I.1}%
-\contentsline {section}{\numberline {J}Visual Explainability}{56}{appendix.J}%
-\contentsline {subsection}{\numberline {J.1}Grad-CAM: Gradient-weighted Class Activation Mapping}{56}{subsection.J.1}%
-\contentsline {subsection}{\numberline {J.2}Grad-CAM++: Sharper and More Localised Explanations}{57}{subsection.J.2}%
-\contentsline {section}{\numberline {K}Image Quality, Structural Similarity, and Inference Efficiency}{57}{appendix.K}%
-\contentsline {subsection}{\numberline {K.1}Structural Similarity Index (SSIM)}{57}{subsection.K.1}%
-\contentsline {subsection}{\numberline {K.2}SAHI: Slicing Aided Hyper Inference}{58}{subsection.K.2}%
-\contentsline {section}{\numberline {L}Synthesis and Implications for Heritage Assessment}{58}{appendix.L}%
-\contentsline {section}{\numberline {M}Article List}{60}{appendix.M}%
+\contentsline {section}{\numberline {7}Domain Adaptation}{31}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{31}{subsection.7.1}%
+\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{31}{subsubsection.7.1.1}%
+\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{31}{subsubsection.7.1.2}%
+\contentsline {subsubsection}{\numberline {7.1.3}Results}{31}{subsubsection.7.1.3}%
+\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{32}{subsubsection.7.1.4}%
+\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{32}{subsection.7.2}%
+\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{32}{subsubsection.7.2.1}%
+\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{32}{subsubsection.7.2.2}%
+\contentsline {subsubsection}{\numberline {7.2.3}Results}{32}{subsubsection.7.2.3}%
+\contentsline {section}{\numberline {8}Failure Analysis}{33}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{33}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{34}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{34}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{35}{subsection.8.4}%
+\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{35}{subsection.8.5}%
+\contentsline {section}{\numberline {9}Additional Experiments}{36}{section.9}%
+\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{36}{subsection.9.1}%
+\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{36}{subsubsection.9.1.1}%
+\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{36}{subsubsection.9.1.2}%
+\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{37}{subsection.9.2}%
+\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{37}{subsubsection.9.2.1}%
+\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{37}{subsubsection.9.2.2}%
+\contentsline {subsubsection}{\numberline {9.2.3}Results}{37}{subsubsection.9.2.3}%
+\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{38}{subsection.9.3}%
+\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{38}{subsubsection.9.3.1}%
+\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{38}{subsubsection.9.3.2}%
+\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{39}{subsubsection.9.3.3}%
+\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{40}{subsubsection.9.3.4}%
+\contentsline {section}{\numberline {10}Web Application}{41}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{41}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{41}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{42}{subsection.10.3}%
+\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{42}{subsection.10.4}%
+\contentsline {section}{\numberline {11}Discussion}{43}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{43}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{43}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{44}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{44}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Sigmoid Calibration and Threshold Discovery in Deployment}{44}{subsection.11.5}%
+\contentsline {subsection}{\numberline {11.6}Limitations}{45}{subsection.11.6}%
+\contentsline {section}{\numberline {12}Conclusions}{46}{section.12}%
+\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{48}{appendix.A}%
+\contentsline {section}{\numberline {B}Software Environment}{48}{appendix.B}%
+\contentsline {part}{Article Reading Survey}{51}{section*.42}%
+\contentsline {section}{\numberline {C}Introduction}{51}{appendix.C}%
+\contentsline {section}{\numberline {D}Foundational Convolutional Architectures}{51}{appendix.D}%
+\contentsline {subsection}{\numberline {D.1}Deep Residual Learning: ResNet}{51}{subsection.D.1}%
+\contentsline {subsection}{\numberline {D.2}EfficientNet: Compound Model Scaling}{52}{subsection.D.2}%
+\contentsline {section}{\numberline {E}Semantic Segmentation}{52}{appendix.E}%
+\contentsline {subsection}{\numberline {E.1}Fully Convolutional Networks}{52}{subsection.E.1}%
+\contentsline {subsection}{\numberline {E.2}U-Net: Symmetric Encoder-Decoder for Dense Prediction}{53}{subsection.E.2}%
+\contentsline {subsection}{\numberline {E.3}DeepLabV3+: Atrous Convolutions and Contextual Aggregation}{53}{subsection.E.3}%
+\contentsline {section}{\numberline {F}Object Detection}{54}{appendix.F}%
+\contentsline {subsection}{\numberline {F.1}Faster R-CNN: Region-Based Detection}{54}{subsection.F.1}%
+\contentsline {subsection}{\numberline {F.2}Feature Pyramid Networks}{54}{subsection.F.2}%
+\contentsline {subsection}{\numberline {F.3}YOLO: Real-Time Single-Stage Detection}{55}{subsection.F.3}%
+\contentsline {section}{\numberline {G}Crack Detection and Structural Damage Datasets}{55}{appendix.G}%
+\contentsline {subsection}{\numberline {G.1}From Classical to Deep Crack Detection}{55}{subsection.G.1}%
+\contentsline {subsection}{\numberline {G.2}DeepCrack: Hierarchical Feature Learning for Crack Segmentation}{55}{subsection.G.2}%
+\contentsline {subsection}{\numberline {G.3}OmniCrack30k: Large-Scale Crack Segmentation}{56}{subsection.G.3}%
+\contentsline {subsection}{\numberline {G.4}Masonry Crack Detection and the Dais Dataset}{56}{subsection.G.4}%
+\contentsline {section}{\numberline {H}Heritage Building Damage Assessment}{57}{appendix.H}%
+\contentsline {subsection}{\numberline {H.1}Computer Vision for Cultural Heritage: A Survey}{57}{subsection.H.1}%
+\contentsline {subsection}{\numberline {H.2}The DACL10k Dataset}{57}{subsection.H.2}%
+\contentsline {section}{\numberline {I}Transfer Learning and Domain Adaptation}{58}{appendix.I}%
+\contentsline {subsection}{\numberline {I.1}Transfer Learning for Computer Vision}{58}{subsection.I.1}%
+\contentsline {section}{\numberline {J}Visual Explainability}{58}{appendix.J}%
+\contentsline {subsection}{\numberline {J.1}Grad-CAM: Gradient-weighted Class Activation Mapping}{58}{subsection.J.1}%
+\contentsline {subsection}{\numberline {J.2}Grad-CAM++: Sharper and More Localised Explanations}{59}{subsection.J.2}%
+\contentsline {section}{\numberline {K}Image Quality, Structural Similarity, and Inference Efficiency}{59}{appendix.K}%
+\contentsline {subsection}{\numberline {K.1}Structural Similarity Index (SSIM)}{59}{subsection.K.1}%
+\contentsline {subsection}{\numberline {K.2}SAHI: Slicing Aided Hyper Inference}{60}{subsection.K.2}%
+\contentsline {section}{\numberline {L}Synthesis and Implications for Heritage Assessment}{60}{appendix.L}%
+\contentsline {section}{\numberline {M}Article List}{62}{appendix.M}%

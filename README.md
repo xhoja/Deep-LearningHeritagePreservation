@@ -314,8 +314,6 @@ Classification SotA threshold exceeded. See `notebooks/01_classification.ipynb` 
 
 ### Task 2 — Detection Results (YOLOv8l, OmniCrack30k Phase Training)
 
-#### Single-Class OmniCrack30k Only (Notebook 02_detection)
-
 Trained on T4 GPU (Google Colab), 3-phase progressive training (320px → 640px → 1024px), batch=16, AMP enabled. Addressed mask→box noise by removing DACL10K mixed data; phase training stabilizes learning at increasing resolutions.
 
 **Phase 1 (320px, 20 epochs, frozen backbone):**  
@@ -330,22 +328,7 @@ Test mAP@50 = 0.4166 (degraded — high resolution caused overfitting; batch hal
 **Ensemble Evaluation (Phase 1+2+3):**  
 Ensemble voting across checkpoints: P1 (0.4939) + P2 (0.5522) + P3 (0.4166) = avg confidence 0.1920. Phase 2 baseline remains best; Phase 3 degradation dominates ensemble average.
 
-#### Multi-Class DACL10K Detector (Notebook 09)
-
-Trained on dacl10k bridge inspection dataset, 5-class damage taxonomy (crack + efflorescence, spalling, weathering, wetspot), 50 epochs, 640px, batch=16.
-
-**Validation set (dacl10k val, 975 images):**
-
-| Class | mAP@50 | Instances |
-|---|---|---|
-| crack | 0.1271 | 520 |
-| efflorescence | 0.0930 | 515 |
-| spalling | 0.1617 | 1,400 |
-| weathering | 0.2265 | 570 |
-| wetspot | 0.0657 | 218 |
-| **all** | **0.1348** | 3,223 |
-
-**Finding:** Single-class training on mixed noisy data (notebook 02) fails. Multi-class on structured dacl10k (notebook 09) shows class-specific patterns (weathering best, wetspot worst) but overall ceiling is low (~13%). Root cause: detection task fundamentally harder than segmentation; thin cracks need high-res slicing (SAHI) for recall, but precision remains limited by dataset annotation quality and crack scale variation across sources.
+For multi-class DACL10K detection (5-class damage types), see Task 9 (`notebooks/09_dacl10k_detector.ipynb`).
 
 ### Task 3 — Segmentation Results (MAnet + mit_b2, Masonry + CrackForest + OmniCrack30k)
 
@@ -422,6 +405,21 @@ Strong in-distribution performance (Crack IoU 97.51%, threshold 0.8 inverted). s
 **Report narrative:** Domain adaptation via fine-tuning on 250 heritage crack images improves mAP@50 from 8.8% to 23.6% on the combined heritage test set — a 169% relative improvement — demonstrating that adaptation is possible but difficult, highlighting the severity of the OmniCrack→heritage domain gap. This directly addresses the project's central research question on cross-dataset generalisation.
 
 
+### Task 5b — SAHI Sliced Inference Evaluation (`notebooks/05_detector_finetuning.ipynb`)
+
+**Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
+
+**Setup:** Same fine-tuned YOLOv8l checkpoint from Task 5. Adaptive slice size 256–512 px, 20% overlap, conf=0.25.
+
+| Method | mAP@50 | Boxes predicted |
+|---|---|---|
+| Plain YOLOv8l (imgsz=640) | **28.0%** | Normal |
+| YOLOv8l + SAHI (adaptive 256–512 tiles) | **18.9%** | 32 across 54 images |
+| Delta | **−9.2 pp** | — |
+
+**Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
+
+
 ### Task 6 — Failure Analysis & Grad-CAM++ (`notebooks/06_failure_analysis.ipynb`)
 
 Post-hoc analysis across all three models on the HistoricalCrack test split (780 images, same 80/20 seed=42 as training). Uses **Grad-CAM++** (pytorch-grad-cam) on EfficientNet-B4's last MBConv block for sharper, more localised attention maps than standard Grad-CAM.
@@ -491,62 +489,7 @@ Cross-domain drop from 97.51% → 35.24% Crack IoU confirms the segmentor learne
 The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s (which fired on all 780 images). Agreement rises to 82.7%, demonstrating better calibration. Type B = 111 is the new critical failure mode: the detector silently misses cracks that the classifier flags — a consequence of the OmniCrack30k→HistoricalCrack domain gap. In the pipeline, the classifier gate still prevents most intact images from reaching the detector; the missed detections (FN) motivate domain adaptation fine-tuning (Task 5).
 
 
-### Task 5b — SAHI Sliced Inference Evaluation (`notebooks/05_detector_finetuning.ipynb`)
-
-> Note: SAHI evaluation was previously a standalone notebook (`07_sahi_evaluation.ipynb`). It has been consolidated into `05_detector_finetuning.ipynb` — notebook 07 is now `07_classifier_finetuning.ipynb`.
-
-**Hypothesis:** SAHI (Slicing Aided Hyper Inference) improves detection of hairline cracks by tiling each image into overlapping 512×512 patches and running YOLO on each tile, making small cracks visible at full resolution.
-
-**Setup:** Same fine-tuned YOLOv8l checkpoint from Task 5. Adaptive slice size 256–512 px, 20% overlap, conf=0.25.
-
-| Method | mAP@50 | Boxes predicted |
-|---|---|---|
-| Plain YOLOv8l (imgsz=640) | **28.0%** | Normal |
-| YOLOv8l + SAHI (adaptive 256–512 tiles) | **18.9%** | 32 across 54 images |
-| Delta | **−9.2 pp** | — |
-
-**Finding:** SAHI underperformed. Heritage masonry and CrackForest cracks are medium-to-large relative to image size — not sub-pixel objects. Slicing offered no resolution advantage while introducing patch-boundary artifacts. The fine-tuned model also produced low-confidence predictions on cropped tiles (most filtered at conf=0.25), leading to severe under-detection. SAHI is most effective for genuinely tiny objects in high-resolution aerial or satellite imagery.
-
-
-### Task 10 — Multi-Class Damage Detector on DACL10k (`notebooks/09_dacl10k_detector.ipynb`)
-
-**Motivation:** The single-class crack detector (OmniCrack30k) produces binary crack/no-crack boxes. Heritage buildings exhibit multiple co-occurring damage types. DACL10k provides polygon-annotated structural damage across 19 classes; this task trains a 5-class multi-class detector capturing the most architecturally significant deterioration types.
-
-**Dataset:** DACL10k v2 devphase — 6,935 train / 975 val images. Polygon annotations converted to YOLO bounding boxes. 5 classes retained:
-
-| Class | Train boxes | Val boxes |
-|---|---|---|
-| crack | 3,530 | 520 |
-| efflorescence | 3,450 | 515 |
-| spalling | 8,484 | 1,400 |
-| weathering | 4,064 | 570 |
-| wetspot | 1,443 | 218 |
-| **Total** | **20,971** | **3,223** |
-
-**Setup:** YOLOv8s, `freeze=10`, `lr0=0.005`, `batch=16`, `imgsz=640`, 50 epochs, patience=15, T4 GPU (~3.5 hrs).
-
-**Results (best checkpoint, val split):**
-
-| Class | mAP@50 | mAP@50-95 |
-|---|---|---|
-| crack | 12.7% | — |
-| efflorescence | 9.3% | — |
-| spalling | 16.2% | — |
-| **weathering** | **22.7%** | — |
-| wetspot | 6.6% | — |
-| **all** | **13.5%** | **6.3%** |
-| Precision | 24.5% | — |
-| Recall | 18.5% | — |
-
-**Key findings:**
-1. **Weathering highest mAP (22.7%)** — covers large, uniform surface areas; easiest to localise at 640 px resolution.
-2. **Wetspot lowest (6.6%)** — small, highly variable in appearance and shape; requires higher resolution or SAHI tiling.
-3. **Freeze=10 limits crack detection** — backbone cannot adapt crack-frequency features from OmniCrack → dacl10k domain; full fine-tune would likely improve crack class significantly.
-4. **dacl10k is a known hard benchmark** — irregular damage morphology, heavy class imbalance (spalling 40% of boxes), real-world annotation noise from polygon→bbox conversion.
-5. **Multi-class value:** enables per-damage-type localisation unavailable from the single-class model — directly supports heritage condition mapping with specific deterioration labels.
-
-
-### Task 1b — Classifier Domain Adaptation (`notebooks/07_classifier_finetuning.ipynb`)
+### Task 7 — Classifier Domain Adaptation (`notebooks/07_classifier_finetuning.ipynb`)
 
 **Problem:** EfficientNet-B4 (trained on HistoricalCrack) achieves 99.83% on its own test split but only 71.2% cracked recall on heritage masonry images, where GradCAM shows attention on irrelevant background regions.
 
@@ -564,7 +507,7 @@ The upgraded YOLOv8l detector is far more conservative than the previous YOLOv8s
 3. **GradCAM attention shifts** — post fine-tuning, the model attends to crack edges and branching structures in masonry images rather than irrelevant background textures.
 
 
-### Task 9 — Synthetic Temporal Degradation Analysis (`notebooks/08_degradation_analysis.ipynb`)
+### Task 8 — Synthetic Temporal Degradation Analysis (`notebooks/08_degradation_analysis.ipynb`)
 
 **Motivation:** No public dataset of aligned, multi-decade facade photos of the same heritage building exists. This notebook addresses the gap with a physically-motivated synthetic degradation pipeline, then characterises how classical signal-processing filters respond as damage accumulates.
 
@@ -603,6 +546,44 @@ Crack textures drawn from Masonry + CrackForest ground-truth masks, ensuring mor
 Score = 0.25·(1−SSIM) + 0.25·ΔGabor + 0.25·Δentropy + 0.25·GLCM\_contrast, using delta-from-baseline normalisation to enforce Stage 0 as floor. Pearson r = **0.843** between degradation score and classifier P(cracked) — strong correlation despite classifier never trained on synthetically degraded images.
 
 **Runtime:** CPU-only, ~8–10 min on T4 Colab.
+
+
+### Task 9 — Multi-Class Damage Detector on DACL10k (`notebooks/09_dacl10k_detector.ipynb`)
+
+**Motivation:** The single-class crack detector (OmniCrack30k) produces binary crack/no-crack boxes. Heritage buildings exhibit multiple co-occurring damage types. DACL10k provides polygon-annotated structural damage across 19 classes; this task trains a 5-class multi-class detector capturing the most architecturally significant deterioration types.
+
+**Dataset:** DACL10k v2 devphase — 6,935 train / 975 val images. Polygon annotations converted to YOLO bounding boxes. 5 classes retained:
+
+| Class | Train boxes | Val boxes |
+|---|---|---|
+| crack | 3,530 | 520 |
+| efflorescence | 3,450 | 515 |
+| spalling | 8,484 | 1,400 |
+| weathering | 4,064 | 570 |
+| wetspot | 1,443 | 218 |
+| **Total** | **20,971** | **3,223** |
+
+**Setup:** YOLOv8s, `freeze=10`, `lr0=0.005`, `batch=16`, `imgsz=640`, 50 epochs, patience=15, T4 GPU (~3.5 hrs).
+
+**Results (best checkpoint, val split):**
+
+| Class | mAP@50 | mAP@50-95 |
+|---|---|---|
+| crack | 12.7% | — |
+| efflorescence | 9.3% | — |
+| spalling | 16.2% | — |
+| **weathering** | **22.7%** | — |
+| wetspot | 6.6% | — |
+| **all** | **13.5%** | **6.3%** |
+| Precision | 24.5% | — |
+| Recall | 18.5% | — |
+
+**Key findings:**
+1. **Weathering highest mAP (22.7%)** — covers large, uniform surface areas; easiest to localise at 640 px resolution.
+2. **Wetspot lowest (6.6%)** — small, highly variable in appearance and shape; requires higher resolution or SAHI tiling.
+3. **Freeze=10 limits crack detection** — backbone cannot adapt crack-frequency features from OmniCrack → dacl10k domain; full fine-tune would likely improve crack class significantly.
+4. **dacl10k is a known hard benchmark** — irregular damage morphology, heavy class imbalance (spalling 40% of boxes), real-world annotation noise from polygon→bbox conversion.
+5. **Multi-class value:** enables per-damage-type localisation unavailable from the single-class model — directly supports heritage condition mapping with specific deterioration labels.
 
 
 ## Web Application

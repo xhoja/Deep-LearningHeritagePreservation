@@ -110,90 +110,90 @@
 \newlabel{sec:cross_dataset}{{6.4}{29}{Cross-Dataset Evaluation}{subsection.6.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Cross-dataset generalisation results. Each model is evaluated on one or more datasets not used during training. Classifier metric: cracked-class recall. Segmentor metric: 2-class mIoU. Detector metric: mAP@50.}}{29}{table.caption.23}\protected@file@percent }
 \newlabel{tab:cross_eval}{{8}{29}{Cross-dataset generalisation results. Each model is evaluated on one or more datasets not used during training. Classifier metric: cracked-class recall. Segmentor metric: 2-class mIoU. Detector metric: mAP@50}{table.caption.23}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Domain Adaptation}{30}{section.7}\protected@file@percent }
-\newlabel{sec:domain_adapt}{{7}{30}{Domain Adaptation}{section.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{30}{subsection.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{30}{subsubsection.7.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{30}{subsubsection.7.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.3}Results}{30}{subsubsection.7.1.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Detector mAP@50 before and after fine-tuning on the heritage domain. Relative improvements are computed against the pre-fine-tuning baseline.}}{30}{table.caption.24}\protected@file@percent }
-\newlabel{tab:det_ft}{{9}{30}{Detector mAP@50 before and after fine-tuning on the heritage domain. Relative improvements are computed against the pre-fine-tuning baseline}{table.caption.24}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{31}{subsubsection.7.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{31}{subsection.7.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{31}{subsubsection.7.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{31}{subsubsection.7.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.3}Results}{31}{subsubsection.7.2.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Classifier accuracy and heritage recall before and after domain adaptation fine-tuning. Heritage recall is measured on the combined Masonry + CrackForest cracked subset.}}{31}{table.caption.25}\protected@file@percent }
-\newlabel{tab:cls_ft}{{10}{31}{Classifier accuracy and heritage recall before and after domain adaptation fine-tuning. Heritage recall is measured on the combined Masonry + CrackForest cracked subset}{table.caption.25}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Failure Analysis}{32}{section.8}\protected@file@percent }
-\newlabel{sec:failure}{{8}{32}{Failure Analysis}{section.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{32}{subsection.8.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces EfficientNet-B4 error breakdown on the HistoricalCrack18-19 test split (780 images). Zero false negatives is the critical safety result.}}{32}{table.caption.26}\protected@file@percent }
-\newlabel{tab:cls_errors}{{11}{32}{EfficientNet-B4 error breakdown on the HistoricalCrack18-19 test split (780 images). Zero false negatives is the critical safety result}{table.caption.26}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Grad-CAM++ attention maps for EfficientNet-B4. Top row: original images (left three intact, right three cracked). Bottom row: heatmap overlays. On intact images the model attends to broad surface regions with low activation; on cracked images the heatmap concentrates tightly along the crack trajectory, confirming the model learned spatially localised crack-edge representations rather than global texture statistics.}}{32}{figure.caption.27}\protected@file@percent }
-\newlabel{fig:gradcam}{{16}{32}{Grad-CAM++ attention maps for EfficientNet-B4. Top row: original images (left three intact, right three cracked). Bottom row: heatmap overlays. On intact images the model attends to broad surface regions with low activation; on cracked images the heatmap concentrates tightly along the crack trajectory, confirming the model learned spatially localised crack-edge representations rather than global texture statistics}{figure.caption.27}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{33}{subsection.8.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Classifier out-of-distribution generalisation. All images in CrackForest and Masonry are genuinely cracked; the positive fraction confirms the model's crack detection is stable across domains.}}{33}{table.caption.28}\protected@file@percent }
-\newlabel{tab:cls_ood}{{12}{33}{Classifier out-of-distribution generalisation. All images in CrackForest and Masonry are genuinely cracked; the positive fraction confirms the model's crack detection is stable across domains}{table.caption.28}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{33}{subsection.8.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Recall of 1.000 confirms the detector never misses an actual crack.}}{33}{table.caption.29}\protected@file@percent }
-\newlabel{tab:det_fail}{{13}{33}{YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Recall of 1.000 confirms the detector never misses an actual crack}{table.caption.29}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{34}{subsection.8.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces MAnet + MiT-B2 segmentation failure analysis on the combined test split (54 image-mask pairs). Error overlay convention: green = true positive crack pixels, red = missed cracks (FN), blue = spurious predictions (FP).}}{34}{table.caption.30}\protected@file@percent }
-\newlabel{tab:seg_fail}{{14}{34}{MAnet + MiT-B2 segmentation failure analysis on the combined test split (54 image-mask pairs). Error overlay convention: green = true positive crack pixels, red = missed cracks (FN), blue = spurious predictions (FP)}{table.caption.30}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{34}{subsection.8.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 0 is the key safety result: the two models are fully consistent on all positive (damaged) cases.}}{34}{table.caption.31}\protected@file@percent }
-\newlabel{tab:cross_task}{{15}{34}{Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 0 is the key safety result: the two models are fully consistent on all positive (damaged) cases}{table.caption.31}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {9}Additional Experiments}{35}{section.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{35}{subsection.9.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{35}{subsubsection.9.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{35}{subsubsection.9.1.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces SAHI sliced inference vs plain YOLO on the heritage test set (54 images). SAHI underperforms the standard inference by 9.1 pp, disconfirming the hypothesis.}}{35}{table.caption.32}\protected@file@percent }
-\newlabel{tab:sahi}{{16}{35}{SAHI sliced inference vs plain YOLO on the heritage test set (54 images). SAHI underperforms the standard inference by 9.1 pp, disconfirming the hypothesis}{table.caption.32}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{36}{subsection.9.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{36}{subsubsection.9.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{36}{subsubsection.9.2.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces DACL10k class selection and annotation counts for training and validation splits.}}{36}{table.caption.33}\protected@file@percent }
-\newlabel{tab:dacl_classes}{{17}{36}{DACL10k class selection and annotation counts for training and validation splits}{table.caption.33}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.3}Results}{36}{subsubsection.9.2.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces DACL10k multi-class detector results on the validation split. Weathering achieves the highest per-class mAP@50 due to its large, homogeneous appearance; wetspot is the hardest class.}}{36}{table.caption.34}\protected@file@percent }
-\newlabel{tab:dacl}{{18}{36}{DACL10k multi-class detector results on the validation split. Weathering achieves the highest per-class mAP@50 due to its large, homogeneous appearance; wetspot is the hardest class}{table.caption.34}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{37}{subsection.9.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{37}{subsubsection.9.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{37}{subsubsection.9.3.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces Synthetic temporal degradation stages. Crack textures at Stages 2 and 3 are drawn from Masonry and CrackForest ground-truth masks, ensuring morphological realism.}}{37}{table.caption.35}\protected@file@percent }
-\newlabel{tab:degradation_stages}{{19}{37}{Synthetic temporal degradation stages. Crack textures at Stages 2 and 3 are drawn from Masonry and CrackForest ground-truth masks, ensuring morphological realism}{table.caption.35}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Synthetic temporal degradation pipeline applied to one facade sample. Stage 0: original undegraded image. Stage 1: HSV colour shift (yellowing) and additive film grain. Stage 2: thin crack overlay from eroded ground-truth mask with biological growth patches. Stage 3: dilated thick cracks, heavy discolouration, and white efflorescence deposits. The crack morphology at Stages 2--3 is drawn from real Masonry and CrackForest ground-truth masks, ensuring realism. SSIM relative to Stage 0: 1.000, 0.844, 0.483, 0.321.}}{38}{figure.caption.36}\protected@file@percent }
-\newlabel{fig:degradation}{{17}{38}{Synthetic temporal degradation pipeline applied to one facade sample. Stage 0: original undegraded image. Stage 1: HSV colour shift (yellowing) and additive film grain. Stage 2: thin crack overlay from eroded ground-truth mask with biological growth patches. Stage 3: dilated thick cracks, heavy discolouration, and white efflorescence deposits. The crack morphology at Stages 2--3 is drawn from real Masonry and CrackForest ground-truth masks, ensuring realism. SSIM relative to Stage 0: 1.000, 0.844, 0.483, 0.321}{figure.caption.36}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{38}{subsubsection.9.3.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces Classical signal-processing filter responses to synthetic degradation. GLCM contrast is the most reliable monotonic damage indicator across all four stages.}}{38}{table.caption.37}\protected@file@percent }
-\newlabel{tab:filter_bank}{{20}{38}{Classical signal-processing filter responses to synthetic degradation. GLCM contrast is the most reliable monotonic damage indicator across all four stages}{table.caption.37}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{39}{subsubsection.9.3.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces Composite degradation score and EfficientNet-B4 cracked probability per synthetic stage. The Pearson correlation of 0.843 validates the simulation's visual realism.}}{39}{table.caption.38}\protected@file@percent }
-\newlabel{tab:deg_score}{{21}{39}{Composite degradation score and EfficientNet-B4 cracked probability per synthetic stage. The Pearson correlation of 0.843 validates the simulation's visual realism}{table.caption.38}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {10}Web Application}{40}{section.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{40}{subsection.10.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{40}{subsection.10.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{41}{subsection.10.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces Image preprocessing filter descriptions. Each filter is designed to enhance crack visibility on heritage masonry surfaces by addressing a specific image quality challenge.}}{41}{table.caption.39}\protected@file@percent }
-\newlabel{tab:filters}{{22}{41}{Image preprocessing filter descriptions. Each filter is designed to enhance crack visibility on heritage masonry surfaces by addressing a specific image quality challenge}{table.caption.39}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{41}{subsection.10.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {11}Discussion}{42}{section.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{42}{subsection.11.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{42}{subsection.11.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{43}{subsection.11.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{43}{subsection.11.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.5}Sigmoid Calibration and Threshold Discovery in Deployment}{43}{subsection.11.5}\protected@file@percent }
-\newlabel{sec:sigmoid_cal}{{11.5}{43}{Sigmoid Calibration and Threshold Discovery in Deployment}{subsection.11.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.6}Limitations}{44}{subsection.11.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {12}Conclusions}{44}{section.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{46}{appendix.A}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {23}{\ignorespaces Complete training hyperparameters for all three primary models.}}{46}{table.caption.40}\protected@file@percent }
-\newlabel{tab:hyperparams}{{23}{46}{Complete training hyperparameters for all three primary models}{table.caption.40}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {B}Software Environment}{46}{appendix.B}\protected@file@percent }
-\newlabel{app:env}{{B}{46}{Software Environment}{appendix.B}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {24}{\ignorespaces Key software versions used for training and evaluation.}}{46}{table.caption.41}\protected@file@percent }
-\newlabel{tab:software}{{24}{46}{Key software versions used for training and evaluation}{table.caption.41}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Domain Adaptation}{31}{section.7}\protected@file@percent }
+\newlabel{sec:domain_adapt}{{7}{31}{Domain Adaptation}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Detector Fine-tuning on Heritage Data (Task 5)}{31}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.1}Motivation and Setup}{31}{subsubsection.7.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.2}Backbone Freezing Strategy}{31}{subsubsection.7.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.3}Results}{31}{subsubsection.7.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Detector mAP@50 before and after fine-tuning on the heritage domain. Relative improvements are computed against the pre-fine-tuning baseline.}}{31}{table.caption.24}\protected@file@percent }
+\newlabel{tab:det_ft}{{9}{31}{Detector mAP@50 before and after fine-tuning on the heritage domain. Relative improvements are computed against the pre-fine-tuning baseline}{table.caption.24}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.4}Limitations}{32}{subsubsection.7.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Classifier Domain Adaptation (Task 1b)}{32}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.1}Motivation}{32}{subsubsection.7.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.2}Fine-tuning Protocol}{32}{subsubsection.7.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.3}Results}{32}{subsubsection.7.2.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Classifier accuracy and heritage recall before and after domain adaptation fine-tuning. Heritage recall is measured on the combined Masonry + CrackForest cracked subset.}}{32}{table.caption.25}\protected@file@percent }
+\newlabel{tab:cls_ft}{{10}{32}{Classifier accuracy and heritage recall before and after domain adaptation fine-tuning. Heritage recall is measured on the combined Masonry + CrackForest cracked subset}{table.caption.25}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Failure Analysis}{33}{section.8}\protected@file@percent }
+\newlabel{sec:failure}{{8}{33}{Failure Analysis}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Classifier Failure Mode Analysis}{33}{subsection.8.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces EfficientNet-B4 error breakdown on the HistoricalCrack18-19 test split (780 images). Zero false negatives is the critical safety result.}}{33}{table.caption.26}\protected@file@percent }
+\newlabel{tab:cls_errors}{{11}{33}{EfficientNet-B4 error breakdown on the HistoricalCrack18-19 test split (780 images). Zero false negatives is the critical safety result}{table.caption.26}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Grad-CAM++ attention maps for EfficientNet-B4. Top row: original images (left three intact, right three cracked). Bottom row: heatmap overlays. On intact images the model attends to broad surface regions with low activation; on cracked images the heatmap concentrates tightly along the crack trajectory, confirming the model learned spatially localised crack-edge representations rather than global texture statistics.}}{33}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:gradcam}{{16}{33}{Grad-CAM++ attention maps for EfficientNet-B4. Top row: original images (left three intact, right three cracked). Bottom row: heatmap overlays. On intact images the model attends to broad surface regions with low activation; on cracked images the heatmap concentrates tightly along the crack trajectory, confirming the model learned spatially localised crack-edge representations rather than global texture statistics}{figure.caption.27}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Classifier OOD Generalisation}{34}{subsection.8.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Classifier out-of-distribution generalisation. All images in CrackForest and Masonry are genuinely cracked; the positive fraction confirms the model's crack detection is stable across domains.}}{34}{table.caption.28}\protected@file@percent }
+\newlabel{tab:cls_ood}{{12}{34}{Classifier out-of-distribution generalisation. All images in CrackForest and Masonry are genuinely cracked; the positive fraction confirms the model's crack detection is stable across domains}{table.caption.28}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Detection Failure Mode Analysis}{34}{subsection.8.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Precision 0.652 reflects selective firing; recall 0.296 reflects the OmniCrack30k-to-HistoricalCrack domain gap.}}{34}{table.caption.29}\protected@file@percent }
+\newlabel{tab:det_fail}{{13}{34}{YOLOv8l detection failure analysis on the HistoricalCrack18-19 test split (780 images) at confidence threshold 0.25. Precision 0.652 reflects selective firing; recall 0.296 reflects the OmniCrack30k-to-HistoricalCrack domain gap}{table.caption.29}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.4}Segmentation Failure Mode Analysis}{35}{subsection.8.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces MAnet + MiT-B2 segmentation failure analysis on the combined test split (54 image-mask pairs). Error overlay convention: green = true positive crack pixels, red = missed cracks (FN), blue = spurious predictions (FP).}}{35}{table.caption.30}\protected@file@percent }
+\newlabel{tab:seg_fail}{{14}{35}{MAnet + MiT-B2 segmentation failure analysis on the combined test split (54 image-mask pairs). Error overlay convention: green = true positive crack pixels, red = missed cracks (FN), blue = spurious predictions (FP)}{table.caption.30}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.5}Cross-Task Consistency Analysis}{35}{subsection.8.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 111 is the critical failure mode: the detector silently misses cracks the classifier flags, a direct consequence of the OmniCrack30k-to-HistoricalCrack domain gap.}}{35}{table.caption.31}\protected@file@percent }
+\newlabel{tab:cross_task}{{15}{35}{Cross-task consistency analysis on HistoricalCrack18-19 test split (780 images). Type B = 111 is the critical failure mode: the detector silently misses cracks the classifier flags, a direct consequence of the OmniCrack30k-to-HistoricalCrack domain gap}{table.caption.31}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Additional Experiments}{36}{section.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}SAHI Sliced Inference Evaluation (Task 7)}{36}{subsection.9.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.1.1}Hypothesis and Setup}{36}{subsubsection.9.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.1.2}Results and Analysis}{36}{subsubsection.9.1.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces SAHI sliced inference vs plain YOLO on the heritage test set (54 images). SAHI underperforms the standard inference by 9.1 pp, disconfirming the hypothesis.}}{36}{table.caption.32}\protected@file@percent }
+\newlabel{tab:sahi}{{16}{36}{SAHI sliced inference vs plain YOLO on the heritage test set (54 images). SAHI underperforms the standard inference by 9.1 pp, disconfirming the hypothesis}{table.caption.32}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Multi-Class Damage Detection on DACL10k (Task 10)}{37}{subsection.9.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}Motivation}{37}{subsubsection.9.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Dataset and Setup}{37}{subsubsection.9.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces DACL10k class selection and annotation counts for training and validation splits.}}{37}{table.caption.33}\protected@file@percent }
+\newlabel{tab:dacl_classes}{{17}{37}{DACL10k class selection and annotation counts for training and validation splits}{table.caption.33}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.3}Results}{37}{subsubsection.9.2.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces DACL10k multi-class detector results on the validation split. Weathering achieves the highest per-class mAP@50 due to its large, homogeneous appearance; wetspot is the hardest class.}}{37}{table.caption.34}\protected@file@percent }
+\newlabel{tab:dacl}{{18}{37}{DACL10k multi-class detector results on the validation split. Weathering achieves the highest per-class mAP@50 due to its large, homogeneous appearance; wetspot is the hardest class}{table.caption.34}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Synthetic Temporal Degradation Analysis (Task 9)}{38}{subsection.9.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.1}Motivation}{38}{subsubsection.9.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.2}Degradation Simulation}{38}{subsubsection.9.3.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces Synthetic temporal degradation stages. Crack textures at Stages 2 and 3 are drawn from Masonry and CrackForest ground-truth masks, ensuring morphological realism.}}{38}{table.caption.35}\protected@file@percent }
+\newlabel{tab:degradation_stages}{{19}{38}{Synthetic temporal degradation stages. Crack textures at Stages 2 and 3 are drawn from Masonry and CrackForest ground-truth masks, ensuring morphological realism}{table.caption.35}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Synthetic temporal degradation pipeline applied to one facade sample. Stage 0: original undegraded image. Stage 1: HSV colour shift (yellowing) and additive film grain. Stage 2: thin crack overlay from eroded ground-truth mask with biological growth patches. Stage 3: dilated thick cracks, heavy discolouration, and white efflorescence deposits. The crack morphology at Stages 2--3 is drawn from real Masonry and CrackForest ground-truth masks, ensuring realism. SSIM relative to Stage 0: 1.000, 0.844, 0.483, 0.321.}}{39}{figure.caption.36}\protected@file@percent }
+\newlabel{fig:degradation}{{17}{39}{Synthetic temporal degradation pipeline applied to one facade sample. Stage 0: original undegraded image. Stage 1: HSV colour shift (yellowing) and additive film grain. Stage 2: thin crack overlay from eroded ground-truth mask with biological growth patches. Stage 3: dilated thick cracks, heavy discolouration, and white efflorescence deposits. The crack morphology at Stages 2--3 is drawn from real Masonry and CrackForest ground-truth masks, ensuring realism. SSIM relative to Stage 0: 1.000, 0.844, 0.483, 0.321}{figure.caption.36}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.3}Filter Bank Results}{39}{subsubsection.9.3.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces Classical signal-processing filter responses to synthetic degradation. GLCM contrast is the most reliable monotonic damage indicator across all four stages.}}{39}{table.caption.37}\protected@file@percent }
+\newlabel{tab:filter_bank}{{20}{39}{Classical signal-processing filter responses to synthetic degradation. GLCM contrast is the most reliable monotonic damage indicator across all four stages}{table.caption.37}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.3.4}Composite Degradation Score and DL Validation}{40}{subsubsection.9.3.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces Composite degradation score and EfficientNet-B4 cracked probability per synthetic stage. The Pearson correlation of 0.843 validates the simulation's visual realism.}}{40}{table.caption.38}\protected@file@percent }
+\newlabel{tab:deg_score}{{21}{40}{Composite degradation score and EfficientNet-B4 cracked probability per synthetic stage. The Pearson correlation of 0.843 validates the simulation's visual realism}{table.caption.38}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Web Application}{41}{section.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Architecture and Concurrency}{41}{subsection.10.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}Single-Image Analysis Mode}{41}{subsection.10.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Image Preprocessing Filters}{42}{subsection.10.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces Image preprocessing filter descriptions. Each filter is designed to enhance crack visibility on heritage masonry surfaces by addressing a specific image quality challenge.}}{42}{table.caption.39}\protected@file@percent }
+\newlabel{tab:filters}{{22}{42}{Image preprocessing filter descriptions. Each filter is designed to enhance crack visibility on heritage masonry surfaces by addressing a specific image quality challenge}{table.caption.39}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Before-After Comparison Mode}{42}{subsection.10.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Discussion}{43}{section.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Cross-Domain Generalisation is Asymmetric by Model Type}{43}{subsection.11.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Domain Adaptation with Small Data is Viable but Limited}{43}{subsection.11.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}The Chained Pipeline Architecture Compensates for Detector Weaknesses}{44}{subsection.11.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.4}Synthetic Degradation Validates Classifier Generalisation}{44}{subsection.11.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.5}Sigmoid Calibration and Threshold Discovery in Deployment}{44}{subsection.11.5}\protected@file@percent }
+\newlabel{sec:sigmoid_cal}{{11.5}{44}{Sigmoid Calibration and Threshold Discovery in Deployment}{subsection.11.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.6}Limitations}{45}{subsection.11.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Conclusions}{46}{section.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Training Hyperparameter Summary}{48}{appendix.A}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {23}{\ignorespaces Complete training hyperparameters for all three primary models.}}{48}{table.caption.40}\protected@file@percent }
+\newlabel{tab:hyperparams}{{23}{48}{Complete training hyperparameters for all three primary models}{table.caption.40}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Software Environment}{48}{appendix.B}\protected@file@percent }
+\newlabel{app:env}{{B}{48}{Software Environment}{appendix.B}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {24}{\ignorespaces Key software versions used for training and evaluation.}}{48}{table.caption.41}\protected@file@percent }
+\newlabel{tab:software}{{24}{48}{Key software versions used for training and evaluation}{table.caption.41}{}}
 \bibcite{ronneberger2015unet}{1}
 \bibcite{chen2018deeplab}{2}
 \bibcite{ren2015faster}{3}
@@ -209,73 +209,73 @@
 \bibcite{lin2017focal}{13}
 \bibcite{berman2018lovasz}{14}
 \citation{surv:he2016deep}
-\@writefile{toc}{\contentsline {part}{Article Reading Survey}{49}{section*.42}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {C}Introduction}{49}{appendix.C}\protected@file@percent }
-\newlabel{surv:sec:intro}{{C}{49}{Introduction}{appendix.C}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {D}Foundational Convolutional Architectures}{49}{appendix.D}\protected@file@percent }
-\newlabel{surv:sec:backbones}{{D}{49}{Foundational Convolutional Architectures}{appendix.D}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}Deep Residual Learning: ResNet}{49}{subsection.D.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {part}{Article Reading Survey}{51}{section*.42}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Introduction}{51}{appendix.C}\protected@file@percent }
+\newlabel{surv:sec:intro}{{C}{51}{Introduction}{appendix.C}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Foundational Convolutional Architectures}{51}{appendix.D}\protected@file@percent }
+\newlabel{surv:sec:backbones}{{D}{51}{Foundational Convolutional Architectures}{appendix.D}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}Deep Residual Learning: ResNet}{51}{subsection.D.1}\protected@file@percent }
 \citation{tan2019efficientnet}
 \citation{surv:long2015fully}
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}EfficientNet: Compound Model Scaling}{50}{subsection.D.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {E}Semantic Segmentation}{50}{appendix.E}\protected@file@percent }
-\newlabel{surv:sec:segmentation}{{E}{50}{Semantic Segmentation}{appendix.E}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}Fully Convolutional Networks}{50}{subsection.E.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}EfficientNet: Compound Model Scaling}{52}{subsection.D.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {E}Semantic Segmentation}{52}{appendix.E}\protected@file@percent }
+\newlabel{surv:sec:segmentation}{{E}{52}{Semantic Segmentation}{appendix.E}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}Fully Convolutional Networks}{52}{subsection.E.1}\protected@file@percent }
 \citation{ronneberger2015unet}
 \citation{surv:zhang2018road}
 \citation{surv:chen2018deeplabv3plus}
 \citation{surv:liu2019deepcrack}
-\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}U-Net: Symmetric Encoder-Decoder for Dense Prediction}{51}{subsection.E.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {E.3}DeepLabV3+: Atrous Convolutions and Contextual Aggregation}{51}{subsection.E.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}U-Net: Symmetric Encoder-Decoder for Dense Prediction}{53}{subsection.E.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.3}DeepLabV3+: Atrous Convolutions and Contextual Aggregation}{53}{subsection.E.3}\protected@file@percent }
 \citation{ren2015faster}
 \citation{surv:lin2017fpn}
 \citation{redmon2016yolo}
 \citation{surv:redmon2018yolov3}
-\@writefile{toc}{\contentsline {section}{\numberline {F}Object Detection}{52}{appendix.F}\protected@file@percent }
-\newlabel{surv:sec:detection}{{F}{52}{Object Detection}{appendix.F}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Faster R-CNN: Region-Based Detection}{52}{subsection.F.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Feature Pyramid Networks}{52}{subsection.F.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {F}Object Detection}{54}{appendix.F}\protected@file@percent }
+\newlabel{surv:sec:detection}{{F}{54}{Object Detection}{appendix.F}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Faster R-CNN: Region-Based Detection}{54}{subsection.F.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Feature Pyramid Networks}{54}{subsection.F.2}\protected@file@percent }
 \citation{ultralytics2023}
 \citation{surv:zou2012cracktree}
 \citation{surv:yang2019fphb}
 \citation{surv:liu2019deepcrack}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}YOLO: Real-Time Single-Stage Detection}{53}{subsection.F.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {G}Crack Detection and Structural Damage Datasets}{53}{appendix.G}\protected@file@percent }
-\newlabel{surv:sec:crack}{{G}{53}{Crack Detection and Structural Damage Datasets}{appendix.G}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {G.1}From Classical to Deep Crack Detection}{53}{subsection.G.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {G.2}DeepCrack: Hierarchical Feature Learning for Crack Segmentation}{53}{subsection.G.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}YOLO: Real-Time Single-Stage Detection}{55}{subsection.F.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {G}Crack Detection and Structural Damage Datasets}{55}{appendix.G}\protected@file@percent }
+\newlabel{surv:sec:crack}{{G}{55}{Crack Detection and Structural Damage Datasets}{appendix.G}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.1}From Classical to Deep Crack Detection}{55}{subsection.G.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.2}DeepCrack: Hierarchical Feature Learning for Crack Segmentation}{55}{subsection.G.2}\protected@file@percent }
 \citation{surv:benz2022omnicrack}
 \citation{surv:dais2021crack}
-\@writefile{toc}{\contentsline {subsection}{\numberline {G.3}OmniCrack30k: Large-Scale Crack Segmentation}{54}{subsection.G.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {G.4}Masonry Crack Detection and the Dais Dataset}{54}{subsection.G.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.3}OmniCrack30k: Large-Scale Crack Segmentation}{56}{subsection.G.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {G.4}Masonry Crack Detection and the Dais Dataset}{56}{subsection.G.4}\protected@file@percent }
 \citation{surv:mishra2024heritage}
 \citation{surv:benz2022dacl10k}
-\@writefile{toc}{\contentsline {section}{\numberline {H}Heritage Building Damage Assessment}{55}{appendix.H}\protected@file@percent }
-\newlabel{surv:sec:heritage}{{H}{55}{Heritage Building Damage Assessment}{appendix.H}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Computer Vision for Cultural Heritage: A Survey}{55}{subsection.H.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {H.2}The DACL10k Dataset}{55}{subsection.H.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {H}Heritage Building Damage Assessment}{57}{appendix.H}\protected@file@percent }
+\newlabel{surv:sec:heritage}{{H}{57}{Heritage Building Damage Assessment}{appendix.H}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Computer Vision for Cultural Heritage: A Survey}{57}{subsection.H.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.2}The DACL10k Dataset}{57}{subsection.H.2}\protected@file@percent }
 \citation{surv:pan2010transfer}
 \citation{surv:yosinski2014transferable}
 \citation{surv:mccloskey1989catastrophic}
 \citation{selvaraju2020gradcam}
-\@writefile{toc}{\contentsline {section}{\numberline {I}Transfer Learning and Domain Adaptation}{56}{appendix.I}\protected@file@percent }
-\newlabel{surv:sec:transfer}{{I}{56}{Transfer Learning and Domain Adaptation}{appendix.I}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {I.1}Transfer Learning for Computer Vision}{56}{subsection.I.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {J}Visual Explainability}{56}{appendix.J}\protected@file@percent }
-\newlabel{surv:sec:explain}{{J}{56}{Visual Explainability}{appendix.J}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {J.1}Grad-CAM: Gradient-weighted Class Activation Mapping}{56}{subsection.J.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {I}Transfer Learning and Domain Adaptation}{58}{appendix.I}\protected@file@percent }
+\newlabel{surv:sec:transfer}{{I}{58}{Transfer Learning and Domain Adaptation}{appendix.I}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {I.1}Transfer Learning for Computer Vision}{58}{subsection.I.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {J}Visual Explainability}{58}{appendix.J}\protected@file@percent }
+\newlabel{surv:sec:explain}{{J}{58}{Visual Explainability}{appendix.J}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {J.1}Grad-CAM: Gradient-weighted Class Activation Mapping}{58}{subsection.J.1}\protected@file@percent }
 \citation{surv:chattopadhay2018gradcampp}
 \citation{surv:wang2004ssim}
-\@writefile{toc}{\contentsline {subsection}{\numberline {J.2}Grad-CAM++: Sharper and More Localised Explanations}{57}{subsection.J.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {K}Image Quality, Structural Similarity, and Inference Efficiency}{57}{appendix.K}\protected@file@percent }
-\newlabel{surv:sec:quality}{{K}{57}{Image Quality, Structural Similarity, and Inference Efficiency}{appendix.K}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {K.1}Structural Similarity Index (SSIM)}{57}{subsection.K.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {J.2}Grad-CAM++: Sharper and More Localised Explanations}{59}{subsection.J.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {K}Image Quality, Structural Similarity, and Inference Efficiency}{59}{appendix.K}\protected@file@percent }
+\newlabel{surv:sec:quality}{{K}{59}{Image Quality, Structural Similarity, and Inference Efficiency}{appendix.K}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {K.1}Structural Similarity Index (SSIM)}{59}{subsection.K.1}\protected@file@percent }
 \citation{surv:akyon2022sahi}
-\@writefile{toc}{\contentsline {subsection}{\numberline {K.2}SAHI: Slicing Aided Hyper Inference}{58}{subsection.K.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {L}Synthesis and Implications for Heritage Assessment}{58}{appendix.L}\protected@file@percent }
-\newlabel{surv:sec:synthesis}{{L}{58}{Synthesis and Implications for Heritage Assessment}{appendix.L}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {M}Article List}{60}{appendix.M}\protected@file@percent }
-\newlabel{surv:sec:articles}{{M}{60}{Article List}{appendix.M}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {K.2}SAHI: Slicing Aided Hyper Inference}{60}{subsection.K.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {L}Synthesis and Implications for Heritage Assessment}{60}{appendix.L}\protected@file@percent }
+\newlabel{surv:sec:synthesis}{{L}{60}{Synthesis and Implications for Heritage Assessment}{appendix.L}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {M}Article List}{62}{appendix.M}\protected@file@percent }
+\newlabel{surv:sec:articles}{{M}{62}{Article List}{appendix.M}{}}
 \bibcite{surv:he2016deep}{1}
 \bibcite{surv:tan2019efficientnet}{2}
 \bibcite{surv:long2015fully}{3}
@@ -300,4 +300,4 @@
 \bibcite{surv:zou2012cracktree}{22}
 \bibcite{surv:mccloskey1989catastrophic}{23}
 \bibcite{surv:zhang2018road}{24}
-\gdef \@abspage@last{63}
+\gdef \@abspage@last{65}
